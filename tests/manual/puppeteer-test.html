@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Puppeteer Test Page</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .test-button {
+      padding: 8px 16px;
+      background-color: #4299e1;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+    .test-button:hover {
+      background-color: #3182ce;
+    }
+    pre {
+      background-color: #f7fafc;
+      padding: 15px;
+      border-radius: 4px;
+      overflow: auto;
+      border: 1px solid #e2e8f0;
+    }
+    .success {
+      color: #38a169;
+      font-weight: bold;
+    }
+    .error {
+      color: #e53e3e;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Task 1.3 Test Page</h1>
+  <p>This page can be used both for manual testing and for Puppeteer automated testing.</p>
+  <p>Each button below corresponds to a specific test for Task 1.3 components.</p>
+
+  <h2>Layout Tests</h2>
+  <button class="test-button" id="btnOpenConfig">Open Configuration Panel</button>
+  <button class="test-button" id="btnChangeLayout">Change Grid Layout</button>
+  <div id="layoutOutput"></div>
+
+  <h2>Theme Tests</h2>
+  <button class="test-button" id="btnToggleTheme">Toggle Dark/Light Theme</button>
+  <button class="test-button" id="btnToggleContrast">Toggle High Contrast</button>
+  <button class="test-button" id="btnChangeFontSize">Increase Font Size</button>
+  <div id="themeOutput"></div>
+
+  <h2>Persistence Tests</h2>
+  <button class="test-button" id="btnSaveSettings">Save Test Settings</button>
+  <button class="test-button" id="btnLoadSettings">Load Saved Settings</button>
+  <button class="test-button" id="btnClearSettings">Clear All Settings</button>
+  <pre id="persistenceOutput"></pre>
+
+  <script>
+    // Storage keys - must match the ones in the app
+    const STORAGE_KEYS = {
+      LAYOUT_CONFIG: 'kiosk-app:layout-config',
+      THEME_CONFIG: 'kiosk-app:theme-config'
+    };
+
+    // Default config objects
+    const defaultLayoutConfig = {
+      grid: { columns: 12, rows: 12 },
+      widgets: [
+        { id: 'welcome', x: 3, y: 3, width: 6, height: 6, visible: true }
+      ]
+    };
+
+    const defaultThemeConfig = {
+      colorMode: 'dark',
+      primaryColor: 'teal.500',
+      backgroundColor: 'gray.900',
+      textColor: 'white',
+      accentColor: 'blue.400',
+      fontSizeBase: 16,
+      highContrast: false
+    };
+
+    // Store current config
+    let currentLayoutConfig = { ...defaultLayoutConfig };
+    let currentThemeConfig = { ...defaultThemeConfig };
+
+    // Load existing config from localStorage if available
+    try {
+      const storedLayout = localStorage.getItem(STORAGE_KEYS.LAYOUT_CONFIG);
+      const storedTheme = localStorage.getItem(STORAGE_KEYS.THEME_CONFIG);
+      
+      if (storedLayout) {
+        currentLayoutConfig = JSON.parse(storedLayout);
+      }
+      
+      if (storedTheme) {
+        currentThemeConfig = JSON.parse(storedTheme);
+      }
+    } catch (error) {
+      console.error('Error loading saved configurations', error);
+    }
+
+    // Update the output displays with current config
+    function updateOutputs() {
+      document.getElementById('layoutOutput').innerHTML = 
+        `<pre>Current Layout: ${currentLayoutConfig.grid.columns}×${currentLayoutConfig.grid.rows} grid with ${currentLayoutConfig.widgets.length} widget(s)</pre>`;
+      
+      document.getElementById('themeOutput').innerHTML = 
+        `<pre>Current Theme: ${currentThemeConfig.colorMode} mode, ${currentThemeConfig.fontSizeBase}px base font, high contrast: ${currentThemeConfig.highContrast}</pre>`;
+      
+      document.getElementById('persistenceOutput').innerHTML = 
+        `Layout Config:\n${JSON.stringify(currentLayoutConfig, null, 2)}\n\nTheme Config:\n${JSON.stringify(currentThemeConfig, null, 2)}`;
+    }
+
+    // Save configurations to localStorage
+    function saveConfigurations() {
+      try {
+        localStorage.setItem(STORAGE_KEYS.LAYOUT_CONFIG, JSON.stringify(currentLayoutConfig));
+        localStorage.setItem(STORAGE_KEYS.THEME_CONFIG, JSON.stringify(currentThemeConfig));
+        return true;
+      } catch (error) {
+        console.error('Error saving configurations', error);
+        return false;
+      }
+    }
+
+    // Initialize the page
+    updateOutputs();
+
+    // Button event handlers
+    document.getElementById('btnOpenConfig').addEventListener('click', () => {
+      document.getElementById('layoutOutput').innerHTML = 
+        `<span class="success">✓ Configuration panel would open here</span>`;
+    });
+
+    document.getElementById('btnChangeLayout').addEventListener('click', () => {
+      // Toggle between 12×12 and 8×6 grid
+      if (currentLayoutConfig.grid.columns === 12) {
+        currentLayoutConfig.grid.columns = 8;
+        currentLayoutConfig.grid.rows = 6;
+      } else {
+        currentLayoutConfig.grid.columns = 12;
+        currentLayoutConfig.grid.rows = 12;
+      }
+      
+      const success = saveConfigurations();
+      document.getElementById('layoutOutput').innerHTML = 
+        success
+          ? `<span class="success">✓ Grid changed to ${currentLayoutConfig.grid.columns}×${currentLayoutConfig.grid.rows} and saved</span>`
+          : `<span class="error">× Failed to save grid configuration</span>`;
+      
+      updateOutputs();
+    });
+
+    document.getElementById('btnToggleTheme').addEventListener('click', () => {
+      // Toggle between dark and light mode
+      currentThemeConfig.colorMode = currentThemeConfig.colorMode === 'dark' ? 'light' : 'dark';
+      currentThemeConfig.backgroundColor = currentThemeConfig.colorMode === 'dark' ? 'gray.900' : 'gray.50';
+      currentThemeConfig.textColor = currentThemeConfig.colorMode === 'dark' ? 'white' : 'gray.800';
+      
+      const success = saveConfigurations();
+      document.getElementById('themeOutput').innerHTML = 
+        success
+          ? `<span class="success">✓ Theme changed to ${currentThemeConfig.colorMode} mode and saved</span>`
+          : `<span class="error">× Failed to save theme configuration</span>`;
+      
+      updateOutputs();
+    });
+
+    document.getElementById('btnToggleContrast').addEventListener('click', () => {
+      // Toggle high contrast mode
+      currentThemeConfig.highContrast = !currentThemeConfig.highContrast;
+      
+      const success = saveConfigurations();
+      document.getElementById('themeOutput').innerHTML = 
+        success
+          ? `<span class="success">✓ High contrast ${currentThemeConfig.highContrast ? 'enabled' : 'disabled'} and saved</span>`
+          : `<span class="error">× Failed to save high contrast setting</span>`;
+      
+      updateOutputs();
+    });
+
+    document.getElementById('btnChangeFontSize').addEventListener('click', () => {
+      // Cycle through font sizes: 16 -> 18 -> 20 -> 14 -> 16
+      const sizes = [16, 18, 20, 14, 16];
+      const currentIndex = sizes.indexOf(currentThemeConfig.fontSizeBase);
+      const nextIndex = (currentIndex + 1) % sizes.length;
+      currentThemeConfig.fontSizeBase = sizes[nextIndex];
+      
+      const success = saveConfigurations();
+      document.getElementById('themeOutput').innerHTML = 
+        success
+          ? `<span class="success">✓ Font size changed to ${currentThemeConfig.fontSizeBase}px and saved</span>`
+          : `<span class="error">× Failed to save font size setting</span>`;
+      
+      updateOutputs();
+    });
+
+    document.getElementById('btnSaveSettings').addEventListener('click', () => {
+      // Create test settings
+      const testLayoutConfig = {
+        grid: { columns: 6, rows: 6 },
+        widgets: [
+          { id: 'test', x: 1, y: 1, width: 4, height: 3, visible: true }
+        ]
+      };
+      
+      const testThemeConfig = {
+        colorMode: 'light',
+        primaryColor: 'blue.500',
+        backgroundColor: 'gray.50',
+        textColor: 'gray.800',
+        accentColor: 'purple.400',
+        fontSizeBase: 18,
+        highContrast: true
+      };
+      
+      // Save to localStorage
+      localStorage.setItem(STORAGE_KEYS.LAYOUT_CONFIG, JSON.stringify(testLayoutConfig));
+      localStorage.setItem(STORAGE_KEYS.THEME_CONFIG, JSON.stringify(testThemeConfig));
+      
+      document.getElementById('persistenceOutput').innerHTML = 
+        `<span class="success">✓ Test settings saved to localStorage</span>\n\n` +
+        `Layout Config:\n${JSON.stringify(testLayoutConfig, null, 2)}\n\n` +
+        `Theme Config:\n${JSON.stringify(testThemeConfig, null, 2)}`;
+    });
+
+    document.getElementById('btnLoadSettings').addEventListener('click', () => {
+      try {
+        const storedLayout = localStorage.getItem(STORAGE_KEYS.LAYOUT_CONFIG);
+        const storedTheme = localStorage.getItem(STORAGE_KEYS.THEME_CONFIG);
+        
+        if (storedLayout) {
+          currentLayoutConfig = JSON.parse(storedLayout);
+        }
+        
+        if (storedTheme) {
+          currentThemeConfig = JSON.parse(storedTheme);
+        }
+        
+        updateOutputs();
+        
+        document.getElementById('persistenceOutput').innerHTML = 
+          `<span class="success">✓ Settings loaded from localStorage</span>\n\n` + 
+          document.getElementById('persistenceOutput').innerHTML;
+      } catch (error) {
+        document.getElementById('persistenceOutput').innerHTML = 
+          `<span class="error">× Error loading settings: ${error.message}</span>`;
+      }
+    });
+
+    document.getElementById('btnClearSettings').addEventListener('click', () => {
+      localStorage.removeItem(STORAGE_KEYS.LAYOUT_CONFIG);
+      localStorage.removeItem(STORAGE_KEYS.THEME_CONFIG);
+      
+      // Reset to defaults
+      currentLayoutConfig = { ...defaultLayoutConfig };
+      currentThemeConfig = { ...defaultThemeConfig };
+      
+      updateOutputs();
+      
+      document.getElementById('persistenceOutput').innerHTML = 
+        `<span class="success">✓ All settings cleared</span>\n\n` + 
+        document.getElementById('persistenceOutput').innerHTML;
+    });
+  </script>
+</body>
+</html>

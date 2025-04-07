@@ -1,0 +1,50 @@
+{
+  "name": "kiosk-app",
+  "version": "1.0.0",
+  "description": "Kiosk display application for home/office use",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "node tests/puppeteer/puppeteer-test.js",
+    "deploy": "npm run build && rsync -avz --delete dist/ pi@raspberrypizerow2.local:/var/www/kiosk/",
+    "start-tests": "node tests/start-and-test.js",
+    "run-puppeteer-test": "./tests/puppeteer/run-puppeteer-test.sh",
+    "test:manual": "npm run dev"
+  },
+  "keywords": [
+    "kiosk",
+    "dashboard",
+    "display"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@chakra-ui/react": "^2.8.0",
+    "@emotion/react": "^11.11.1",
+    "@emotion/styled": "^11.11.0",
+    "@modelcontextprotocol/sdk": "^1.8.0",
+    "@modelcontextprotocol/server-brave-search": "^0.6.2",
+    "framer-motion": "^10.15.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.24.0",
+    "@types/react": "^18.2.20",
+    "@types/react-dom": "^18.2.7",
+    "@typescript-eslint/eslint-plugin": "^8.29.0",
+    "@typescript-eslint/parser": "^8.29.0",
+    "@vitejs/plugin-react": "^4.0.4",
+    "eslint": "^9.24.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "puppeteer": "^24.6.0",
+    "typescript": "^5.1.6",
+    "typescript-eslint": "^8.29.0",
+    "vite": "^6.2.5"
+  }
+}
