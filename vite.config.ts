@@ -8,6 +8,10 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
+      // Use Preact instead of React for smaller bundle size
+      'react': 'preact/compat',
+      'react-dom': 'preact/compat',
+      'react/jsx-runtime': 'preact/jsx-runtime',
     },
   },
   server: {

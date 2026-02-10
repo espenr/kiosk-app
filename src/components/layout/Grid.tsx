@@ -1,27 +1,24 @@
-import { Box, BoxProps } from '@chakra-ui/react';
 import { ReactNode } from 'react';
 import { useLayout } from '../../contexts/LayoutContext';
 
-interface GridProps extends BoxProps {
+interface GridProps extends React.HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
 }
 
-export default function Grid({ children, ...props }: GridProps) {
+export default function Grid({ children, className = '', ...props }: GridProps) {
   const { layoutConfig } = useLayout();
   const { columns, rows } = layoutConfig.grid;
 
   return (
-    <Box
-      width="100%"
-      height="100%"
-      position="relative"
-      display="grid"
-      gridTemplateColumns={`repeat(${columns}, 1fr)`}
-      gridTemplateRows={`repeat(${rows}, 1fr)`}
-      gap="2px"
+    <div
+      className={`w-full h-full relative grid gap-[2px] ${className}`}
+      style={{
+        gridTemplateColumns: `repeat(${columns}, 1fr)`,
+        gridTemplateRows: `repeat(${rows}, 1fr)`,
+      }}
       {...props}
     >
       {children}
-    </Box>
+    </div>
   );
 }

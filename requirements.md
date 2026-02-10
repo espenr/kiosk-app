@@ -68,6 +68,8 @@ The application will be a full-screen kiosk display that shows various informati
    - Offline detection with visual indicator
    - Automatic content refresh
    - Error handling for widget loading failures
+   - Frontend error logging to backend logging endpoint
+   - Comprehensive error reporting and diagnostics system
 
 ## Technical Requirements
 
@@ -76,6 +78,9 @@ The application will be a full-screen kiosk display that shows various informati
    - Styling: Chakra UI (CSS-in-JS) - chosen for its ease of use, built-in theming capabilities, and accessible component library.
    - State Management: React Context API
    - Backend: Node.js with Express.js (chosen for its lightweight nature, flexibility, and extensive middleware ecosystem)
+     - **Logging Endpoint**: REST API endpoint for client-side error logging
+     - **Logging System**: Winston-based server-side logging with rotation and levels
+     - **Error Monitoring**: Structured logging for easier analysis and alerting
    - Database: SQLite (preferred for lightweight, single-user setups) or PostgreSQL (recommended for scenarios requiring scalability and high concurrent access)
    - **Modular API Integration**:
      - Design the backend with a provider-agnostic architecture.

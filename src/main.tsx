@@ -5,12 +5,18 @@ import { AppContextProvider } from './contexts/AppContextProvider';
 import ThemeWrapper from './components/theme/ThemeWrapper';
 import './index.css';
 
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+const rootElement = document.getElementById('root');
+
+if (!rootElement) {
+  throw new Error('Root element not found in the DOM');
+}
+
+ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <AppContextProvider>
       <ThemeWrapper>
         <App />
       </ThemeWrapper>
     </AppContextProvider>
-  </React.StrictMode>,
+  </React.StrictMode>
 );
