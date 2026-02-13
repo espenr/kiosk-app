@@ -1,12 +1,12 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code when working with this repository.
 
 ## Commands
 
 ### Development
 - `npm run dev` - Start development server with hot-reload (port 3000)
-- `npm run build` - Build for production (runs TypeScript compilation + Vite build)
+- `npm run build` - Build for production (TypeScript compilation + Vite build)
 - `npm run preview` - Preview production build locally
 - `npm run lint` - Run ESLint on TypeScript/TSX files
 - `npm run typecheck` - Run TypeScript type checking without emitting files
@@ -17,16 +17,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run test:manual` - Start dev server for manual testing
 - `npm run run-puppeteer-test` - Run Puppeteer tests via shell script
 
-### Backend Server
-- `npm run server` - Start backend server (requires initial setup)
-- `npm run server:install` - Install backend dependencies
-- `npm run dev:all` - Run both frontend and backend concurrently
-
 ### Deployment
-- `npm run deploy` - Build and deploy to Raspberry Pi test server via rsync
-  - Target: `pi@raspberrypizerow2.local:/var/www/kiosk/`
-  - Hostname: raspberrypizerow2
-  - IP: 192.168.50.37
+- `npm run deploy` - Build and deploy to Raspberry Pi via rsync
+  - Target: `pi@192.168.50.37:/var/www/kiosk/`
+  - SSH key auth required (see README.md for setup)
+
+## Tech Stack
+- **Frontend:** Preact (via React alias) + TypeScript + Vite
+- **Styling:** Tailwind CSS (utility-first, static CSS, no runtime)
+- **State:** React Context API + localStorage
+- **Testing:** Puppeteer for browser automation
+- **Build:** Vite with Preact alias, path alias '@' -> 'src'
+- **Target Device:** Raspberry Pi Zero W 2 (512MB RAM)
+- **Bundle Size:** ~69 KB (13 KB CSS + 56 KB JS)
 
 ## Architecture
 
@@ -62,16 +65,15 @@ The application uses a registry-based widget system with three core contexts:
 
 ### Component Structure
 - `Grid` and `GridItem` components handle grid-based layout rendering
-- `ConfigPanel` provides settings UI (drawer from right side)
+- `ConfigPanel` provides settings UI (custom sliding drawer from right side)
 - Widget components receive `WidgetProps<T>` with config and onConfigChange callback
+- `ThemeWrapper` applies theme via direct DOM manipulation (CSS variables on document root)
 - App.tsx initializes default layout with welcome widget and creates clock widget on first load
 
-### Backend Server
-- Express.js server in `server/` directory
-- Winston-based logging with daily rotation (`server/src/services/logger.js`)
-- REST endpoint for client-side error logging (`server/src/routes/logging.js`)
-- Error handling middleware (`server/src/middleware/errorHandler.js`)
-- CORS and Helmet middleware for security
+### Build Configuration
+- Preact alias in `vite.config.ts`: `'react' -> 'preact/compat'`, `'react-dom' -> 'preact/compat'`
+- Tailwind CSS via PostCSS (`postcss.config.js`, `tailwind.config.js`)
+- Path alias: `'@' -> 'src'`
 
 ## Widget Development
 
@@ -86,6 +88,7 @@ The application uses a registry-based widget system with three core contexts:
    - Place in `src/components/widgets/mywidget/MyWidget.tsx`
    - Component receives `WidgetProps<MyWidgetConfig>`
    - Use `config` prop for settings, call `onConfigChange` to update
+   - Use Tailwind CSS classes for all styling (no CSS-in-JS)
 
 3. **Register widget in `WidgetRegistration.tsx`:**
    - Call `registerWidgetType()` with WidgetMetadata
@@ -97,21 +100,12 @@ The application uses a registry-based widget system with three core contexts:
    - Widget-specific settings are nested (e.g., clockSettings, weatherSettings)
    - All widgets share BaseWidgetConfig properties (id, type, title, visible, position, appearance, refreshInterval)
 
-## Tech Stack
-- **Frontend:** Preact (via React alias) + TypeScript + Vite
-- **UI Library:** Chakra UI (CSS-in-JS with theming)
-- **State:** React Context API
-- **Backend:** None (removed for memory optimization)
-- **Testing:** Puppeteer for browser automation
-- **Build:** Vite with Preact alias, path alias '@' → 'src'
-- **Target Device:** Raspberry Pi Zero W 2 (512MB RAM)
-- **Bundle Size:** 392KB JS (130KB gzipped)
-
 ## Code Style
 - TypeScript for all new code, avoid `any` type
 - camelCase for variables/functions, PascalCase for components/types
 - Functional components with hooks (not class components)
-- Group imports: external → internal → styles
+- Tailwind CSS classes for all styling, no inline styles except for dynamic values
+- Group imports: external -> internal -> styles
 - Use Prettier for formatting (default config)
 
 ## Testing Notes
@@ -120,72 +114,21 @@ The application uses a registry-based widget system with three core contexts:
 - Screenshots saved to `/tests/screenshots/`
 - See `/tests/README.md` for detailed testing documentation
 
-## Recent Optimizations (2026-02-09)
-
-**Backend Removal & Preact Migration:**
-- ✅ Removed Express backend (saves 50-100MB RAM)
-- ✅ Added Preact alias (saves 81KB bundle, 17% reduction)
-- ✅ Simplified logger to console-only
-- ✅ Re-enabled React.StrictMode
-- ✅ Cleaned up unused imports
-
-**Results:**
-- Bundle: 474KB → 392KB (81KB saved)
-- Packages: 501 → 440 (61 removed)
-- RAM freed: ~100MB on Pi Zero W 2
-- No functionality lost
-
-**See:**
-- `/docs/OPTIMIZATION_RESULTS.md` - Detailed results
-- `/docs/TECH_STACK_AUDIT.md` - Full technology audit
-- `/docs/DEPLOYMENT_GUIDE.md` - Deployment with optimized Chromium flags
-
 ## Development Workflow
 1. Widget types must be registered before widget instances can be created
 2. Widget instances link to layout positions via widget ID
 3. Changes to widget configs automatically persist to localStorage
 4. App.tsx handles initial layout setup and widget creation
-5. Use the config panel (⚙️ button) to modify settings at runtime
+5. Use the config panel button to modify settings at runtime
 
-## Development Plan & Task Status
+## Development Plan
 
-### Epic 1: Project Foundation ✅ COMPLETED
-- [x] Task 1.1: Project setup and configuration
-- [x] Task 1.2: Development Environment Setup
-- [x] Task 1.3: Core layout system
-- [x] Task 1.4: State management foundation
-
-### Epic 2: Core Widget Development 🚧 IN PROGRESS
-- [x] Task 2.1: Clock/Date Widget ✅
-  - [x] Create basic digital clock display
-  - [x] Add date display with formatting options
-  - [x] Implement timezone support
-  - [x] Add configuration options (12/24h, display format)
-- [ ] Task 2.2: Weather Widget
-  - [ ] Create weather display component
-  - [ ] Implement Apple Weather API integration
-  - [ ] Add current conditions display
-  - [ ] Add forecast display
-  - [ ] Create weather settings configuration
-- [ ] Task 2.3: Calendar Widget
-  - [ ] Create calendar view component
-  - [ ] Implement Google Calendar API integration
-  - [ ] Add event display functionality
-  - [ ] Create calendar configuration options
-  - [ ] Add color-coding for different calendars
-
-### Epic 3: Media and Information Widgets
-- [ ] Task 3.1: Photo Display
-- [ ] Task 3.2: Public Transport Widget
-
-### Epic 4: Advanced Features
-- [ ] Task 4.1: Block Scheduling
-- [ ] Task 4.2: System Features (offline detection, auto-refresh, error handling)
-
-### Epic 5: UI/UX Refinement
-- [ ] Task 5.1: User Interface Improvements
-- [ ] Task 5.2: Accessibility Features
-
-### Epic 6: Deployment and Optimization
-- [ ] Task 6.1: Performance Optimization
-- [ ] Task 6.2: Deployment Configuration
+### Epic 1: Project Foundation - COMPLETE
+### Epic 2: Core Widget Development - IN PROGRESS
+- Clock/Date Widget - Complete
+- Weather Widget - Next
+- Calendar Widget - Planned
+### Epic 3: Media and Information Widgets - Planned
+### Epic 4: Advanced Features - Planned
+### Epic 5: UI/UX Refinement - Planned
+### Epic 6: Deployment and Optimization - In Progress
