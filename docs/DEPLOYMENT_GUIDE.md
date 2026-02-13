@@ -41,6 +41,10 @@ sudo apt install -y unclutter
 
 # Install xdotool (for refresh automation if needed)
 sudo apt install -y xdotool
+
+# Install avahi for mDNS (allows resolving raspberrypizerow2.local from any LAN machine)
+sudo apt install -y avahi-daemon
+sudo systemctl enable avahi-daemon
 ```
 
 ### 2. Configure NGINX

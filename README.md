@@ -16,6 +16,16 @@ npm run build      # Production build
 npm run deploy     # Build and deploy to Raspberry Pi
 ```
 
+### New Dev Machine Setup
+
+If this is a fresh clone on a new machine, run the setup script to configure SSH access to the Pi:
+
+```bash
+bash scripts/setup-deploy.sh
+```
+
+This checks SSH connectivity (mDNS then static IP), verifies tools are installed, and guides you through `ssh-copy-id` if needed.
+
 ## Commands
 
 | Command | Description |
@@ -120,9 +130,9 @@ sudo chown pi:pi /var/www/kiosk
 npm run deploy
 ```
 
-This runs `tsc && vite build` then rsyncs `dist/` to `pi@192.168.50.37:/var/www/kiosk/`.
+This checks Pi connectivity (tries mDNS `raspberrypizerow2.local` first, falls back to `192.168.50.37`), builds the app, and rsyncs `dist/` to the Pi.
 
-The app is then accessible at http://192.168.50.37/.
+If SSH isn't set up yet, run `bash scripts/setup-deploy.sh` for guided setup.
 
 ### USB Gadget Mode (alternative to WiFi)
 

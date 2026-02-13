@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "node tests/puppeteer/puppeteer-test.js",
-    "deploy": "npm run build && rsync -avz --delete dist/ pi@192.168.50.37:/var/www/kiosk/",
+    "deploy": "bash scripts/deploy.sh",
     "start-tests": "node tests/start-and-test.js",
     "run-puppeteer-test": "./tests/puppeteer/run-puppeteer-test.sh",
     "test:manual": "npm run dev"
