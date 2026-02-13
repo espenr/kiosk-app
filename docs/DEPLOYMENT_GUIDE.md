@@ -106,7 +106,7 @@ Or manually:
 
 ```bash
 npm run build
-rsync -avz --delete dist/ pi@raspberrypizerow2.local:/var/www/kiosk/
+rsync -avz --delete dist/ pi@192.168.50.37:/var/www/kiosk/
 ```
 
 ### 5. Configure Chromium Kiosk Mode

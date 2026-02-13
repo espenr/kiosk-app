@@ -29,7 +29,7 @@ This file provides guidance to Claude Code when working with this repository.
 - **Testing:** Puppeteer for browser automation
 - **Build:** Vite with Preact alias, path alias '@' -> 'src'
 - **Target Device:** Raspberry Pi Zero W 2 (512MB RAM)
-- **Bundle Size:** ~69 KB (13 KB CSS + 56 KB JS)
+- **Bundle Size:** ~66 KB (13 KB CSS + 53 KB JS)
 
 ## Architecture
 

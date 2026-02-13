@@ -23,7 +23,7 @@ npm run deploy     # Build and deploy to Raspberry Pi
 | `npm run dev` | Start dev server (port 3000) |
 | `npm run build` | Production build |
 | `npm run deploy` | Build and deploy to Pi |
-| `npm run preview` | Preview production build |
+| `npm run preview` | Preview production build locally |
 | `npm run typecheck` | TypeScript type checking |
 | `npm run lint` | ESLint |
 | `npm test` | Puppeteer tests |
@@ -34,34 +34,85 @@ npm run deploy     # Build and deploy to Raspberry Pi
 - **Styling:** Tailwind CSS (static, no runtime overhead)
 - **State:** React Context API + localStorage persistence
 - **Testing:** Puppeteer
-- **Bundle:** ~69 KB total (13 KB CSS + 56 KB JS)
+- **Bundle:** ~66 KB total (13 KB CSS + 53 KB JS)
 - **Target:** Raspberry Pi Zero W 2 (512MB RAM)
 
 ## Deployment
 
 ### Target Device
 
-- **Device:** Raspberry Pi Zero W 2
-- **IP:** 192.168.50.37
-- **User:** pi
-- **Web root:** `/var/www/kiosk/`
+| Property | Value |
+|----------|-------|
+| Device | Raspberry Pi Zero W 2 |
+| OS | Raspberry Pi OS |
+| IP | 192.168.50.37 |
+| Deploy user | pi |
+| Admin user | espen (has sudo) |
+| Web server | nginx |
+| Web root | /var/www/kiosk/ |
+| URL | http://192.168.50.37/ |
 
-### SSH Setup (one-time)
+### Pi Setup (one-time)
 
-1. Generate an SSH key if you don't have one:
-   ```bash
-   ssh-keygen -t ed25519
-   ```
+These steps were performed to set up the Pi as a deployment target.
 
-2. Copy your key to the Pi:
-   ```bash
-   ssh-copy-id pi@192.168.50.37
-   ```
+#### 1. Create deploy user
 
-3. Verify:
-   ```bash
-   ssh pi@192.168.50.37 "echo 'Success'"
-   ```
+SSH in as admin user and create the `pi` user:
+
+```bash
+ssh espen@192.168.50.37
+sudo useradd -m -s /bin/bash pi
+sudo passwd pi
+sudo mkdir -p /home/pi/.ssh
+sudo chmod 700 /home/pi/.ssh
+sudo chown -R pi:pi /home/pi/.ssh
+```
+
+#### 2. SSH key auth
+
+From your dev machine, copy your public key:
+
+```bash
+ssh-copy-id -i ~/.ssh/id_ed25519.pub pi@192.168.50.37
+```
+
+Verify: `ssh pi@192.168.50.37 "echo 'Success'"`
+
+#### 3. Install and configure nginx
+
+SSH in as admin user:
+
+```bash
+ssh espen@192.168.50.37
+sudo apt-get update && sudo apt-get install -y nginx
+```
+
+Create the site config:
+
+```bash
+sudo tee /etc/nginx/sites-available/kiosk > /dev/null <<'EOF'
+server {
+    listen 80 default_server;
+    root /var/www/kiosk;
+    index index.html;
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+EOF
+
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo ln -sf /etc/nginx/sites-available/kiosk /etc/nginx/sites-enabled/kiosk
+sudo nginx -t && sudo systemctl restart nginx
+```
+
+#### 4. Create web root
+
+```bash
+sudo mkdir -p /var/www/kiosk
+sudo chown pi:pi /var/www/kiosk
+```
 
 ### Deploy
 
@@ -69,7 +120,9 @@ npm run deploy     # Build and deploy to Raspberry Pi
 npm run deploy
 ```
 
-This builds the production bundle and rsyncs it to `/var/www/kiosk/` on the Pi.
+This runs `tsc && vite build` then rsyncs `dist/` to `pi@192.168.50.37:/var/www/kiosk/`.
+
+The app is then accessible at http://192.168.50.37/.
 
 ### USB Gadget Mode (alternative to WiFi)
 
@@ -97,27 +150,26 @@ The Pi Zero W 2 can be accessed over a USB cable using USB gadget mode, useful w
 
 **On your dev machine:**
 
-1. Connect a USB cable to the Pi's **center USB-C port** (data port, not the power-only port).
+1. Connect USB cable to the Pi's **center USB-C port** (data port, not power-only).
 
-2. Configure the USB network interface:
+2. Configure the network interface:
    ```bash
    sudo ip addr add 192.168.42.129/24 dev usb0
    sudo ip link set usb0 up
    ```
 
-3. SSH and deploy:
+3. Deploy over USB:
    ```bash
-   ssh pi@192.168.42.1
    rsync -avz --delete dist/ pi@192.168.42.1:/var/www/kiosk/
    ```
 
-### Chromium Kiosk Flags
+### Chromium Kiosk Mode
 
-For optimal performance on the Pi Zero W 2:
+For running as a full-screen kiosk on the Pi:
 
 ```bash
 chromium-browser \
-  --kiosk http://localhost/kiosk/ \
+  --kiosk http://localhost/ \
   --disable-gpu \
   --disable-software-rasterizer \
   --disable-extensions \
@@ -128,9 +180,10 @@ chromium-browser \
   --no-first-run \
   --noerrdialogs \
   --memory-pressure-off \
-  --max-old-space-size=128 \
-  --js-flags="--max-old-space-size=128"
+  --js-flags="--max-old-space-size=256"
 ```
+
+See [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md) for the full deployment guide including auto-start, screen blanking, memory management, and troubleshooting.
 
 ## Project Structure
 
@@ -141,7 +194,7 @@ src/
   components/
     layout/Grid.tsx, GridItem.tsx    # 12x12 CSS grid system
     settings/ConfigPanel.tsx        # Settings drawer
-    theme/ThemeWrapper.tsx          # Theme provider
+    theme/ThemeWrapper.tsx          # Theme provider (CSS variables)
     widgets/                        # Widget components
       clock/                        # Clock widget
       WidgetRegistration.tsx        # Widget type registration
@@ -162,7 +215,7 @@ tests/                              # Puppeteer and manual tests
 
 ## Documentation
 
-- [CLAUDE.md](CLAUDE.md) - Detailed architecture and widget development guide
+- [CLAUDE.md](CLAUDE.md) - Architecture and widget development guide
+- [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md) - Full deployment and operations guide
 - [docs/TECH_STACK_AUDIT.md](docs/TECH_STACK_AUDIT.md) - Technology audit
-- [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md) - Full deployment guide
 - [docs/PHASE_2_OPTIMIZATION_PLAN.md](docs/PHASE_2_OPTIMIZATION_PLAN.md) - Optimization plan and results
