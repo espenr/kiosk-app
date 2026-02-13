@@ -8,6 +8,12 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Catch JS errors and display them -->
+    <script>
+      window.onerror = function(msg, url, line) {
+        document.getElementById('root').innerHTML = '<pre style="color:red;padding:20px;">Error: ' + msg + '\nAt: ' + url + ':' + line + '</pre>';
+      };
+    </script>
     <!-- Normal application entry point -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
