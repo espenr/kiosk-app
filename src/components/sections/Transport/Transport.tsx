@@ -8,11 +8,11 @@ import { formatDepartureTime, formatTimeUntil } from '../../../services/entur';
 export function Transport() {
   const { departures, isLoading, error } = useTransport();
 
-  // Filter to departures in the future and take first 4
+  // Filter to departures in the future and take first 3 (1 main + 2 later)
   const now = new Date();
   const upcomingDepartures = departures
     .filter((d) => d.expectedTime > now)
-    .slice(0, 4);
+    .slice(0, 3);
 
   if (error && departures.length === 0) {
     return (
