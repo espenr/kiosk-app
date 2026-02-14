@@ -21,13 +21,13 @@ export interface KioskConfig {
   };
 }
 
-// Default configuration (Trondheim area - Vikhammeråsen)
+// Default configuration (Trondheim area - Planetringen)
 const defaultConfig: KioskConfig = {
   location: {
     latitude: 63.4325,
     longitude: 10.6379,
     stopPlaceIds: [
-      'NSR:StopPlace:42205', // Vikhammeråsen
+      'NSR:StopPlace:41589', // Planetringen
     ],
   },
   apiKeys: {
