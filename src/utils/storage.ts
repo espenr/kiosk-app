@@ -288,9 +288,10 @@ export function clearAppData(): void {
 
 // Storage keys
 export const STORAGE_KEYS = {
-  LAYOUT_CONFIG: 'kiosk-app:layout-config',
+  LAYOUT_CONFIG: 'kiosk-app:layout-config', // Legacy - can be removed
   THEME_CONFIG: 'kiosk-app:theme-config',
-  SETTINGS: 'kiosk-app:settings',
-  WIDGETS: 'kiosk-app:widgets',
+  SETTINGS: 'kiosk-app:settings', // Legacy - can be removed
+  WIDGETS: 'kiosk-app:widgets', // Legacy - can be removed
   APP_STATE: 'kiosk-app:app-state',
+  CONFIG: 'kiosk-app:config', // New unified config for redesigned app
 };
