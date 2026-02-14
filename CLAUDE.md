@@ -121,14 +121,23 @@ The application uses a registry-based widget system with three core contexts:
 4. App.tsx handles initial layout setup and widget creation
 5. Use the config panel button to modify settings at runtime
 
-## Development Plan
+## Current Development Plan
 
-### Epic 1: Project Foundation - COMPLETE
-### Epic 2: Core Widget Development - IN PROGRESS
-- Clock/Date Widget - Complete
-- Weather Widget - Next
-- Calendar Widget - Planned
-### Epic 3: Media and Information Widgets - Planned
-### Epic 4: Advanced Features - Planned
-### Epic 5: UI/UX Refinement - Planned
-### Epic 6: Deployment and Optimization - In Progress
+**Active Redesign:** The app is being rebuilt from a flexible widget system to a fixed-layout portrait dashboard.
+
+See full implementation plan: [`/docs/plans/kiosk-redesign.md`](./docs/plans/kiosk-redesign.md)
+
+### Summary
+- **Target:** 32" TV in portrait orientation
+- **Layout:** Fixed vertical sections (Header, Photos, Calendar, Electricity, Transport)
+- **APIs:** Met.no (weather), Google Calendar, Tibber (electricity), Entur (transport), iCloud Shared Album
+
+### Implementation Phases
+- Phase 0: Documentation Setup - **COMPLETE**
+- Phase 1: Cleanup & Fixed Layout
+- Phase 2: Header Section (Clock, Date, Weather)
+- Phase 3: Transport Section (Entur)
+- Phase 4: Electricity Section (Tibber)
+- Phase 5: Calendar Section (Google Calendar)
+- Phase 6: Photo Slideshow (iCloud)
+- Phase 7: Settings & Polish
