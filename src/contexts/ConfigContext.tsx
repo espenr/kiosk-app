@@ -6,7 +6,7 @@ export interface KioskConfig {
   location: {
     latitude: number;
     longitude: number;
-    stopPlaceId: string; // Entur stop ID for Vikhammeråsen
+    stopPlaceIds: string[]; // Entur stop IDs (NSR:StopPlace:xxxxx)
   };
   apiKeys: {
     tibber: string;
@@ -21,12 +21,14 @@ export interface KioskConfig {
   };
 }
 
-// Default configuration (Trondheim area)
+// Default configuration (Trondheim area - Vikhammeråsen)
 const defaultConfig: KioskConfig = {
   location: {
-    latitude: 63.4305,
-    longitude: 10.3951,
-    stopPlaceId: '', // User needs to configure
+    latitude: 63.4325,
+    longitude: 10.6379,
+    stopPlaceIds: [
+      'NSR:StopPlace:42205', // Vikhammeråsen
+    ],
   },
   apiKeys: {
     tibber: '',
@@ -61,10 +63,41 @@ const ConfigContext = createContext<ConfigContextType>({
   isConfigured: false,
 });
 
+// Remove undefined values from an object (shallow)
+function removeUndefined<T extends object>(obj: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined)
+  ) as Partial<T>;
+}
+
+// Deep merge stored config with defaults to ensure all nested properties exist
+// Filters out undefined values so they don't overwrite defaults
+function mergeWithDefaults(stored: Partial<KioskConfig>): KioskConfig {
+  return {
+    location: {
+      ...defaultConfig.location,
+      ...(stored.location ? removeUndefined(stored.location) : {}),
+    },
+    apiKeys: {
+      ...defaultConfig.apiKeys,
+      ...(stored.apiKeys ? removeUndefined(stored.apiKeys) : {}),
+    },
+    photos: {
+      ...defaultConfig.photos,
+      ...(stored.photos ? removeUndefined(stored.photos) : {}),
+    },
+    calendar: {
+      ...defaultConfig.calendar,
+      ...(stored.calendar ? removeUndefined(stored.calendar) : {}),
+    },
+  };
+}
+
 export function ConfigProvider({ children }: { children: ReactNode }) {
-  const [config, setConfig] = useState<KioskConfig>(() =>
-    loadFromStorage(STORAGE_KEYS.CONFIG, defaultConfig)
-  );
+  const [config, setConfig] = useState<KioskConfig>(() => {
+    const stored = loadFromStorage<Partial<KioskConfig>>(STORAGE_KEYS.CONFIG, {});
+    return mergeWithDefaults(stored);
+  });
 
   // Save to localStorage when config changes
   useEffect(() => {
@@ -104,7 +137,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
   };
 
   // Check if minimum required settings are configured
-  const isConfigured = Boolean(config.location.stopPlaceId);
+  const isConfigured = config.location.stopPlaceIds.length > 0;
 
   return (
     <ConfigContext.Provider
