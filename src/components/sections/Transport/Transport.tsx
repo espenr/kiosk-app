@@ -3,95 +3,77 @@ import { formatDepartureTime, formatTimeUntil } from '../../../services/entur';
 
 /**
  * Public transport departures from Entur API
- * Shows next departures from configured stop places
+ * Simple single-line display matching wireframe
  */
 export function Transport() {
   const { departures, isLoading, error } = useTransport();
 
-  // Filter to departures in the future and take first 3 (1 main + 2 later)
+  // Stop name (could be derived from config in the future)
+  const stopName = 'Planetringen';
+
+  // Filter to departures in the future
   const now = new Date();
-  const upcomingDepartures = departures
-    .filter((d) => d.expectedTime > now)
-    .slice(0, 3);
+  const futureDepartures = departures.filter((d) => d.expectedTime > now);
+  const nextDeparture = futureDepartures[0];
+  const upcomingDepartures = futureDepartures.slice(1, 3); // Next 2 after the first
 
   if (error && departures.length === 0) {
     return (
-      <div className="h-full w-full p-6 flex items-center">
-        <div className="text-red-400">
-          <div className="text-sm">Kunne ikke hente avganger</div>
-          <div className="text-xs text-gray-500">{error}</div>
-        </div>
+      <div className="h-full w-full px-6 flex items-center">
+        <span className="text-gray-500">Kunne ikke hente bussavganger</span>
       </div>
     );
   }
 
   if (isLoading && departures.length === 0) {
     return (
-      <div className="h-full w-full p-6">
-        <div className="text-sm text-gray-400 mb-2">Neste buss fra Planetringen</div>
-        <div className="flex items-center gap-4 animate-pulse">
-          <div className="text-4xl font-bold text-gray-600">--:--</div>
+      <div className="h-full w-full px-6 flex items-center gap-4">
+        <div className="flex flex-col">
+          <span className="text-gray-500 text-sm">{stopName}</span>
+          <span className="text-2xl font-bold text-gray-600 tabular-nums">--:--</span>
         </div>
       </div>
     );
   }
 
-  if (upcomingDepartures.length === 0) {
+  if (!nextDeparture) {
     return (
-      <div className="h-full w-full p-6">
-        <div className="text-sm text-gray-400 mb-2">Neste buss fra Planetringen</div>
-        <div className="text-gray-500">Ingen avganger funnet</div>
+      <div className="h-full w-full px-6 flex items-center gap-4">
+        <div className="flex flex-col">
+          <span className="text-gray-500 text-sm">{stopName}</span>
+          <span className="text-gray-500 text-lg">Ingen avganger</span>
+        </div>
       </div>
     );
   }
-
-  const nextDeparture = upcomingDepartures[0];
-  const laterDepartures = upcomingDepartures.slice(1);
 
   return (
-    <div className="h-full w-full p-6 flex items-start gap-8">
-      {/* Next departure - large */}
-      <div className="flex-shrink-0">
-        <div className="text-sm text-gray-400 mb-1">Neste buss</div>
-        <div className="flex items-center gap-4">
-          <div className="text-4xl font-bold tabular-nums">
-            {formatDepartureTime(nextDeparture.expectedTime)}
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-lg font-semibold">
-                {nextDeparture.line}
-              </span>
-              <span className="text-lg">{nextDeparture.destination}</span>
-            </div>
-            <div className="text-sm text-gray-400 flex items-center gap-2">
-              <span>om {formatTimeUntil(nextDeparture.expectedTime)}</span>
-              {nextDeparture.isRealtime && (
-                <span className="text-green-400 text-xs">● sanntid</span>
-              )}
-            </div>
-          </div>
-        </div>
+    <div className="h-full w-full px-6 flex items-center gap-4">
+      <div className="flex flex-col">
+        <span className="text-gray-500 text-sm">{stopName}</span>
+        <span className="text-3xl font-bold tabular-nums">
+          {formatDepartureTime(nextDeparture.expectedTime)}
+        </span>
       </div>
+      <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-lg font-semibold">
+        {nextDeparture.line}
+      </span>
+      <span className="text-gray-400 text-base">
+        ({formatTimeUntil(nextDeparture.expectedTime)})
+      </span>
+      {nextDeparture.isRealtime && (
+        <span className="text-green-400 text-sm">● sanntid</span>
+      )}
 
-      {/* Later departures */}
-      {laterDepartures.length > 0 && (
-        <div className="flex-1 border-l border-gray-700 pl-6">
-          <div className="text-sm text-gray-400 mb-2">Senere avganger</div>
-          <div className="space-y-2">
-            {laterDepartures.map((dep, idx) => (
-              <div key={idx} className="flex items-center gap-3 text-sm">
-                <span className="tabular-nums font-medium w-12">
-                  {formatDepartureTime(dep.expectedTime)}
-                </span>
-                <span className="bg-gray-700 text-white px-1.5 py-0.5 rounded text-xs font-semibold">
-                  {dep.line}
-                </span>
-                <span className="text-gray-300 truncate">{dep.destination}</span>
-                {dep.isRealtime && (
-                  <span className="text-green-400 text-xs ml-auto">●</span>
-                )}
-              </div>
+      {/* Upcoming departures */}
+      {upcomingDepartures.length > 0 && (
+        <div className="flex flex-col ml-4 border-l border-gray-700 pl-4">
+          <span className="text-gray-500 text-sm">Deretter</span>
+          <div className="flex flex-col">
+            {upcomingDepartures.map((dep, index) => (
+              <span key={index} className="text-xl tabular-nums text-gray-300 leading-tight">
+                {formatDepartureTime(dep.expectedTime)}
+              </span>
             ))}
           </div>
         </div>

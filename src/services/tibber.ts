@@ -19,9 +19,19 @@ export interface PriceInfo {
 }
 
 export interface ElectricityData {
+  homeId: string | null;
+  realTimeEnabled: boolean;
   current: PriceInfo | null;
   today: PriceInfo[];
   tomorrow: PriceInfo[];
+}
+
+export interface LiveMeasurement {
+  timestamp: Date;
+  power: number; // Current consumption in Watts
+  accumulatedConsumption: number; // kWh since midnight
+  accumulatedCost: number | null; // Cost since midnight
+  currency: string;
 }
 
 interface TibberPriceInfo {
@@ -36,6 +46,10 @@ interface TibberResponse {
   data: {
     viewer: {
       homes: Array<{
+        id: string;
+        features: {
+          realTimeConsumptionEnabled: boolean;
+        };
         currentSubscription: {
           priceInfo: {
             current: TibberPriceInfo | null;
@@ -50,12 +64,16 @@ interface TibberResponse {
 }
 
 /**
- * GraphQL query for electricity prices
+ * GraphQL query for electricity prices and home ID
  */
 const PRICE_QUERY = `
 {
   viewer {
     homes {
+      id
+      features {
+        realTimeConsumptionEnabled
+      }
       currentSubscription {
         priceInfo {
           current {
@@ -121,6 +139,8 @@ export async function fetchElectricityPrices(token: string): Promise<Electricity
   const priceInfo = home.currentSubscription.priceInfo;
 
   return {
+    homeId: home.id || null,
+    realTimeEnabled: home.features?.realTimeConsumptionEnabled || false,
     current: priceInfo.current ? parsePriceInfo(priceInfo.current) : null,
     today: priceInfo.today.map(parsePriceInfo),
     tomorrow: priceInfo.tomorrow.map(parsePriceInfo),
@@ -182,4 +202,148 @@ export function getPriceLevelBgClass(level: PriceLevel): string {
  */
 export function formatPrice(price: number): string {
   return price.toFixed(2);
+}
+
+/**
+ * WebSocket subscription for live measurements from Tibber Pulse
+ * Uses graphql-transport-ws protocol
+ */
+const WS_ENDPOINT = 'wss://websocket-api.tibber.com/v1-beta/gql/subscriptions';
+
+const LIVE_MEASUREMENT_SUBSCRIPTION = `
+subscription LiveMeasurement($homeId: ID!) {
+  liveMeasurement(homeId: $homeId) {
+    timestamp
+    power
+    accumulatedConsumption
+    accumulatedCost
+    currency
+  }
+}
+`;
+
+export type LiveMeasurementCallback = (measurement: LiveMeasurement) => void;
+export type ErrorCallback = (error: string) => void;
+
+export class TibberLiveConnection {
+  private ws: WebSocket | null = null;
+  private token: string;
+  private homeId: string;
+  private onMeasurement: LiveMeasurementCallback;
+  private onError: ErrorCallback;
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
+  private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  constructor(
+    token: string,
+    homeId: string,
+    onMeasurement: LiveMeasurementCallback,
+    onError: ErrorCallback
+  ) {
+    this.token = token;
+    this.homeId = homeId;
+    this.onMeasurement = onMeasurement;
+    this.onError = onError;
+  }
+
+  connect() {
+    if (this.ws) {
+      this.disconnect();
+    }
+
+    try {
+      this.ws = new WebSocket(WS_ENDPOINT, 'graphql-transport-ws');
+
+      this.ws.onopen = () => {
+        // Send connection init with token
+        this.ws?.send(JSON.stringify({
+          type: 'connection_init',
+          payload: { token: this.token },
+        }));
+      };
+
+      this.ws.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+
+        switch (message.type) {
+          case 'connection_ack':
+            // Connection acknowledged, send subscription
+            this.ws?.send(JSON.stringify({
+              id: '1',
+              type: 'subscribe',
+              payload: {
+                query: LIVE_MEASUREMENT_SUBSCRIPTION,
+                variables: { homeId: this.homeId },
+              },
+            }));
+            this.reconnectAttempts = 0;
+            break;
+
+          case 'next':
+            // Received data
+            if (message.payload?.data?.liveMeasurement) {
+              const data = message.payload.data.liveMeasurement;
+              this.onMeasurement({
+                timestamp: new Date(data.timestamp),
+                power: data.power,
+                accumulatedConsumption: data.accumulatedConsumption,
+                accumulatedCost: data.accumulatedCost,
+                currency: data.currency || 'NOK',
+              });
+            }
+            break;
+
+          case 'error':
+            this.onError(message.payload?.message || 'WebSocket error');
+            break;
+
+          case 'complete':
+            // Subscription completed
+            break;
+        }
+      };
+
+      this.ws.onerror = () => {
+        this.onError('WebSocket connection error');
+      };
+
+      this.ws.onclose = () => {
+        this.ws = null;
+        this.scheduleReconnect();
+      };
+    } catch (err) {
+      this.onError(err instanceof Error ? err.message : 'Failed to connect');
+    }
+  }
+
+  private scheduleReconnect() {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      this.onError('Max reconnection attempts reached');
+      return;
+    }
+
+    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+    this.reconnectAttempts++;
+
+    this.reconnectTimeout = setTimeout(() => {
+      this.connect();
+    }, delay);
+  }
+
+  disconnect() {
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+  }
+
+  isConnected(): boolean {
+    return this.ws?.readyState === WebSocket.OPEN;
+  }
 }

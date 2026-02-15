@@ -14,11 +14,14 @@ export function Header() {
     return () => clearInterval(timer);
   }, []);
 
-  const formattedTime = new Intl.DateTimeFormat('nb-NO', {
+  const formattedHoursMinutes = new Intl.DateTimeFormat('nb-NO', {
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit',
     hour12: false,
+  }).format(time);
+
+  const formattedSeconds = new Intl.DateTimeFormat('nb-NO', {
+    second: '2-digit',
   }).format(time);
 
   const formattedDate = new Intl.DateTimeFormat('nb-NO', {
@@ -34,44 +37,47 @@ export function Header() {
     <div className="h-full flex items-center justify-between px-3">
       {/* Clock and Date */}
       <div className="flex flex-col">
-        <span className="text-3xl font-bold tabular-nums leading-tight">{formattedTime}</span>
-        <span className="text-sm text-gray-400">{displayDate}</span>
+        <div className="flex items-baseline">
+          <span className="text-6xl font-bold tabular-nums leading-none">{formattedHoursMinutes}</span>
+          <span className="text-2xl font-bold tabular-nums text-gray-400 ml-1">:{formattedSeconds}</span>
+        </div>
+        <span className="text-lg text-gray-400">{displayDate}</span>
       </div>
 
       {/* Weather */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-4 ml-auto">
         {/* Current temperature */}
         <div className="text-right flex items-center gap-2">
           {isLoading && !weather ? (
-            <div className="text-2xl text-gray-500">--°C</div>
+            <div className="text-5xl text-gray-500">--°C</div>
           ) : error && !weather ? (
-            <div className="text-xl text-red-400" title={error}>⚠️</div>
+            <div className="text-4xl text-red-400" title={error}>⚠️</div>
           ) : weather ? (
             <>
-              <span className="text-2xl">{getWeatherEmoji(weather.current.symbol)}</span>
-              <span className="text-2xl font-semibold">{weather.current.temperature}°C</span>
+              <span className="text-5xl">{getWeatherEmoji(weather.current.symbol)}</span>
+              <span className="text-5xl font-semibold">{weather.current.temperature}°C</span>
             </>
           ) : null}
         </div>
 
-        {/* 5-day forecast */}
-        <div className="flex gap-1">
-          {weather?.forecast.slice(0, 5).map((day, index) => (
-            <div key={index} className="text-center w-10">
-              <div className="text-gray-500 text-[10px]">{day.dayName}</div>
-              <div className="text-base">{getWeatherEmoji(day.symbol)}</div>
-              <div className="text-gray-400 text-[10px]">
+        {/* 3-day forecast */}
+        <div className="flex gap-2">
+          {weather?.forecast.slice(0, 3).map((day, index) => (
+            <div key={index} className="text-center w-14">
+              <div className="text-gray-500 text-base">{day.dayName}</div>
+              <div className="text-2xl">{getWeatherEmoji(day.symbol)}</div>
+              <div className="text-gray-400 text-base">
                 <span>{day.high}°</span>
                 <span className="text-gray-600 ml-0.5">{day.low}°</span>
               </div>
             </div>
           )) || (
             // Placeholder when loading
-            ['Søn', 'Man', 'Tir', 'Ons', 'Tor'].map((day) => (
-              <div key={day} className="text-center w-10">
-                <div className="text-gray-600 text-[10px]">{day}</div>
-                <div className="text-base text-gray-600">--</div>
-                <div className="text-gray-600 text-[10px]">--°</div>
+            ['Søn', 'Man', 'Tir'].map((day) => (
+              <div key={day} className="text-center w-14">
+                <div className="text-gray-600 text-base">{day}</div>
+                <div className="text-2xl text-gray-600">--</div>
+                <div className="text-gray-600 text-base">--°</div>
               </div>
             ))
           )}

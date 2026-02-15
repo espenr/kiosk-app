@@ -27,19 +27,19 @@ export function DashboardLayout({
 }: DashboardLayoutProps) {
   return (
     <div className="h-screen w-screen bg-gray-900 text-white flex flex-col overflow-hidden">
-      {/* Header - 10% */}
-      <header className="h-[10%] flex-shrink-0 border-b border-gray-800">
+      {/* Header - 8% */}
+      <header className="h-[8%] flex-shrink-0 border-b border-gray-800">
         {header}
       </header>
 
-      {/* Photo + Calendar overlay - 72% */}
-      <section className="h-[72%] flex-shrink-0 relative">
+      {/* Photo + Calendar overlay - 74% */}
+      <section className="h-[74%] flex-shrink-0 relative">
         {/* Photo slideshow - full area */}
         <div className="absolute inset-0 z-10">
           {photoSlideshow}
         </div>
         {/* Calendar overlay - transparent to show photo behind */}
-        <div className="absolute bottom-0 left-0 right-0 h-[55%] z-20">
+        <div className="absolute bottom-0 left-0 right-0 h-[40%] z-20">
           {calendar}
         </div>
       </section>

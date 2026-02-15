@@ -11,6 +11,9 @@ export interface KioskConfig {
   apiKeys: {
     tibber: string;
   };
+  electricity: {
+    gridFee: number; // Grid fee (nettleie) in kr/kWh - added to Tibber price
+  };
   photos: {
     sharedAlbumUrl: string;
     interval: number; // seconds between slides
@@ -43,6 +46,9 @@ const defaultConfig: KioskConfig = {
   apiKeys: {
     tibber: '',
   },
+  electricity: {
+    gridFee: 0.36, // Default grid fee ~36 øre/kWh (typical for Tensio/Trondheim)
+  },
   photos: {
     sharedAlbumUrl: '',
     interval: 30,
@@ -60,6 +66,7 @@ interface ConfigContextType {
   updateConfig: (updates: Partial<KioskConfig>) => void;
   updateLocation: (location: Partial<KioskConfig['location']>) => void;
   updateApiKeys: (apiKeys: Partial<KioskConfig['apiKeys']>) => void;
+  updateElectricity: (electricity: Partial<KioskConfig['electricity']>) => void;
   updatePhotos: (photos: Partial<KioskConfig['photos']>) => void;
   updateCalendar: (calendar: Partial<KioskConfig['calendar']>) => void;
   isConfigured: boolean;
@@ -70,6 +77,7 @@ const ConfigContext = createContext<ConfigContextType>({
   updateConfig: () => {},
   updateLocation: () => {},
   updateApiKeys: () => {},
+  updateElectricity: () => {},
   updatePhotos: () => {},
   updateCalendar: () => {},
   isConfigured: false,
@@ -93,6 +101,10 @@ function mergeWithDefaults(stored: Partial<KioskConfig>): KioskConfig {
     apiKeys: {
       ...defaultConfig.apiKeys,
       ...(stored.apiKeys ? removeUndefined(stored.apiKeys) : {}),
+    },
+    electricity: {
+      ...defaultConfig.electricity,
+      ...(stored.electricity ? removeUndefined(stored.electricity) : {}),
     },
     photos: {
       ...defaultConfig.photos,
@@ -136,6 +148,13 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const updateElectricity = (electricity: Partial<KioskConfig['electricity']>) => {
+    setConfig(prev => ({
+      ...prev,
+      electricity: { ...prev.electricity, ...electricity },
+    }));
+  };
+
   const updatePhotos = (photos: Partial<KioskConfig['photos']>) => {
     setConfig(prev => ({
       ...prev,
@@ -160,6 +179,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
         updateConfig,
         updateLocation,
         updateApiKeys,
+        updateElectricity,
         updatePhotos,
         updateCalendar,
         isConfigured,
