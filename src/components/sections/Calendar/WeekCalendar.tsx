@@ -39,9 +39,8 @@ export function WeekCalendar() {
   }
 
   return (
-    <div className="h-full w-full p-4 flex flex-col">
-      <h2 className="text-lg font-semibold mb-3 text-gray-300">Ukekalender</h2>
-      <div className="grid grid-cols-7 gap-2 flex-1 min-h-0">
+    <div className="h-full w-full px-2 py-1 flex flex-col">
+      <div className="grid grid-cols-7 gap-1 flex-1 min-h-0">
         {days.map((day) => (
           <DayColumn
             key={day.date.toISOString()}
@@ -90,21 +89,21 @@ interface DayColumnProps {
 function DayColumn({ day, events }: DayColumnProps) {
   return (
     <div className="flex flex-col min-h-0">
-      {/* Day header */}
+      {/* Day header - compact */}
       <div
-        className={`text-center pb-2 border-b border-gray-700 ${
-          day.isToday ? 'bg-blue-900/30 rounded-t' : ''
+        className={`text-center pb-1 border-b border-gray-600/50 ${
+          day.isToday ? 'bg-blue-900/40 rounded-t' : ''
         }`}
       >
         <div
-          className={`text-sm font-medium ${
-            day.isToday ? 'text-blue-400' : 'text-gray-400'
+          className={`text-xs font-medium ${
+            day.isToday ? 'text-blue-400' : 'text-gray-500'
           }`}
         >
           {day.dayName}
         </div>
         <div
-          className={`text-lg font-bold ${
+          className={`text-sm font-bold ${
             day.isToday ? 'text-blue-300' : 'text-gray-300'
           }`}
         >
@@ -112,10 +111,10 @@ function DayColumn({ day, events }: DayColumnProps) {
         </div>
       </div>
 
-      {/* Events list */}
-      <div className="flex-1 pt-2 overflow-y-auto space-y-1">
+      {/* Events list - compact */}
+      <div className="flex-1 pt-1 overflow-y-auto space-y-0.5">
         {events.length === 0 ? (
-          <div className="text-xs text-gray-600 text-center">-</div>
+          <div className="text-[10px] text-gray-600 text-center">-</div>
         ) : (
           events.map((event) => <EventItem key={event.id} event={event} />)
         )}
@@ -134,22 +133,22 @@ function EventItem({ event }: EventItemProps) {
 
   return (
     <div
-      className="text-xs p-1 rounded truncate"
+      className="text-[10px] leading-tight px-1 py-0.5 rounded truncate"
       style={{
-        backgroundColor: `${color}20`,
-        borderLeft: `3px solid ${color}`,
+        backgroundColor: `${color}30`,
+        borderLeft: `2px solid ${color}`,
       }}
       title={`${event.calendarName}: ${event.title}`}
     >
       {/* Icon (emoji) for family member */}
       {event.calendarIcon && (
-        <span className="mr-1">{event.calendarIcon}</span>
+        <span className="mr-0.5 text-[9px]">{event.calendarIcon}</span>
       )}
       {/* Time for non-all-day events */}
       {!event.isAllDay && (
-        <span className="text-gray-400 mr-1">{formatEventTime(event.start)}</span>
+        <span className="text-gray-400">{formatEventTime(event.start)} </span>
       )}
-      {/* Event title */}
+      {/* Event title - truncated */}
       <span className="text-gray-200">{event.title}</span>
     </div>
   );

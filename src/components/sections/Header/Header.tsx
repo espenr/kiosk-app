@@ -31,47 +31,47 @@ export function Header() {
   const displayDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
 
   return (
-    <div className="h-full flex items-center justify-between px-8">
+    <div className="h-full flex items-center justify-between px-4">
       {/* Clock and Date */}
-      <div className="flex items-baseline gap-6">
-        <span className="text-6xl font-bold tabular-nums">{formattedTime}</span>
-        <span className="text-2xl text-gray-300">{displayDate}</span>
+      <div className="flex flex-col">
+        <span className="text-4xl font-bold tabular-nums leading-tight">{formattedTime}</span>
+        <span className="text-base text-gray-400">{displayDate}</span>
       </div>
 
       {/* Weather */}
-      <div className="flex items-center gap-8">
+      <div className="flex items-center gap-4">
         {/* Current temperature */}
-        <div className="text-right flex items-center gap-3">
+        <div className="text-right flex items-center gap-2">
           {isLoading && !weather ? (
-            <div className="text-4xl text-gray-500">--°C</div>
+            <div className="text-2xl text-gray-500">--°C</div>
           ) : error && !weather ? (
-            <div className="text-xl text-red-400" title={error}>⚠️</div>
+            <div className="text-lg text-red-400" title={error}>⚠️</div>
           ) : weather ? (
             <>
-              <span className="text-3xl">{getWeatherEmoji(weather.current.symbol)}</span>
-              <span className="text-4xl font-semibold">{weather.current.temperature}°C</span>
+              <span className="text-xl">{getWeatherEmoji(weather.current.symbol)}</span>
+              <span className="text-2xl font-semibold">{weather.current.temperature}°C</span>
             </>
           ) : null}
         </div>
 
-        {/* 5-day forecast */}
-        <div className="flex gap-4 text-sm">
+        {/* 5-day forecast - compact */}
+        <div className="flex gap-1 text-xs">
           {weather?.forecast.slice(0, 5).map((day, index) => (
-            <div key={index} className="text-center min-w-[3rem]">
-              <div className="text-gray-400 text-xs">{day.dayName}</div>
-              <div className="text-lg">{getWeatherEmoji(day.symbol)}</div>
-              <div className="text-gray-300">
-                <span className="font-medium">{day.high}°</span>
-                <span className="text-gray-500 ml-1">{day.low}°</span>
+            <div key={index} className="text-center w-10">
+              <div className="text-gray-500 text-[10px]">{day.dayName}</div>
+              <div className="text-sm">{getWeatherEmoji(day.symbol)}</div>
+              <div className="text-gray-400 text-[10px]">
+                <span>{day.high}°</span>
+                <span className="text-gray-600"> {day.low}°</span>
               </div>
             </div>
           )) || (
             // Placeholder when loading
             ['Ma', 'Ti', 'On', 'To', 'Fr'].map((day) => (
-              <div key={day} className="text-center min-w-[3rem]">
-                <div className="text-gray-500 text-xs">{day}</div>
-                <div className="text-lg text-gray-600">--</div>
-                <div className="text-gray-600">--°</div>
+              <div key={day} className="text-center w-10">
+                <div className="text-gray-600 text-[10px]">{day}</div>
+                <div className="text-sm text-gray-600">--</div>
+                <div className="text-gray-600 text-[10px]">--°</div>
               </div>
             ))
           )}
