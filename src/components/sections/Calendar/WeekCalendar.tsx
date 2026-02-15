@@ -4,6 +4,7 @@ import { getEventsForDay, formatEventTime, CalendarEvent } from '../../../servic
 /**
  * Week calendar showing 7 days with events from multiple family calendars
  * Each family member has their own color and optional icon
+ * Verbose display with time and full event titles
  */
 export function WeekCalendar() {
   const { events, isLoading, error, isConfigured } = useCalendar();
@@ -39,8 +40,8 @@ export function WeekCalendar() {
   }
 
   return (
-    <div className="h-full w-full px-2 py-1 flex flex-col">
-      <div className="grid grid-cols-7 gap-1 flex-1 min-h-0">
+    <div className="h-full w-full px-3 py-2 flex flex-col">
+      <div className="grid grid-cols-7 gap-2 flex-1 min-h-0">
         {days.map((day) => (
           <DayColumn
             key={day.date.toISOString()}
@@ -88,33 +89,33 @@ interface DayColumnProps {
 
 function DayColumn({ day, events }: DayColumnProps) {
   return (
-    <div className="flex flex-col min-h-0">
-      {/* Day header - compact */}
+    <div className="flex flex-col min-h-0 bg-black/40 rounded backdrop-blur-sm">
+      {/* Day header */}
       <div
-        className={`text-center pb-1 border-b border-gray-600/50 ${
-          day.isToday ? 'bg-blue-900/40 rounded-t' : ''
+        className={`text-center py-1 border-b border-gray-600/30 ${
+          day.isToday ? 'bg-blue-900/50 rounded-t' : ''
         }`}
       >
         <div
-          className={`text-xs font-medium ${
-            day.isToday ? 'text-blue-400' : 'text-gray-500'
+          className={`text-xs font-semibold ${
+            day.isToday ? 'text-blue-400' : 'text-gray-400'
           }`}
         >
           {day.dayName}
         </div>
         <div
-          className={`text-sm font-bold ${
-            day.isToday ? 'text-blue-300' : 'text-gray-300'
+          className={`text-lg font-bold leading-tight ${
+            day.isToday ? 'text-blue-300' : 'text-gray-200'
           }`}
         >
           {day.dayNumber}
         </div>
       </div>
 
-      {/* Events list - compact */}
-      <div className="flex-1 pt-1 overflow-y-auto space-y-0.5">
+      {/* Events list - scrollable with more space */}
+      <div className="flex-1 pt-1 overflow-y-auto space-y-1">
         {events.length === 0 ? (
-          <div className="text-[10px] text-gray-600 text-center">-</div>
+          <div className="text-xs text-gray-600 text-center py-2">-</div>
         ) : (
           events.map((event) => <EventItem key={event.id} event={event} />)
         )}
@@ -128,28 +129,26 @@ interface EventItemProps {
 }
 
 function EventItem({ event }: EventItemProps) {
-  // Use the calendar's color (set per family member)
   const color = event.calendarColor;
 
   return (
     <div
-      className="text-[10px] leading-tight px-1 py-0.5 rounded truncate"
+      className="text-xs p-1 rounded"
       style={{
         backgroundColor: `${color}30`,
-        borderLeft: `2px solid ${color}`,
+        borderLeft: `3px solid ${color}`,
       }}
-      title={`${event.calendarName}: ${event.title}`}
     >
-      {/* Icon (emoji) for family member */}
-      {event.calendarIcon && (
-        <span className="mr-0.5 text-[9px]">{event.calendarIcon}</span>
-      )}
-      {/* Time for non-all-day events */}
+      {/* Time row */}
       {!event.isAllDay && (
-        <span className="text-gray-400">{formatEventTime(event.start)} </span>
+        <div className="text-[10px] text-gray-400 font-medium">
+          {formatEventTime(event.start)}
+        </div>
       )}
-      {/* Event title - truncated */}
-      <span className="text-gray-200">{event.title}</span>
+      {/* Title */}
+      <div className="text-gray-100 leading-tight break-words">
+        {event.title}
+      </div>
     </div>
   );
 }

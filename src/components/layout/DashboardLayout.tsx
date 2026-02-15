@@ -9,13 +9,14 @@ interface DashboardLayoutProps {
 }
 
 /**
- * Fixed layout for 32" TV in portrait orientation (1080x1920)
+ * Fixed layout for 32" TV in portrait orientation (768x1125)
+ * Based on Balsamiq wireframe design
  *
  * Layout:
- * - Header: 10% (clock, date, weather)
- * - Photo + Calendar: 50% (slideshow with calendar overlay)
- * - Electricity: 25% (current price + chart)
- * - Transport: 15% (bus departures)
+ * - Header: 8% (clock, date, weather)
+ * - Photo + Calendar: 70% (slideshow with calendar overlay at bottom)
+ * - Electricity: 12% (simple current + forecast text)
+ * - Transport: 10% (single next bus line)
  */
 export function DashboardLayout({
   header,
@@ -31,25 +32,25 @@ export function DashboardLayout({
         {header}
       </header>
 
-      {/* Photo + Calendar overlay - 50% */}
-      <section className="h-[50%] flex-shrink-0 relative">
+      {/* Photo + Calendar overlay - 72% */}
+      <section className="h-[72%] flex-shrink-0 relative">
         {/* Photo slideshow - full area */}
         <div className="absolute inset-0 z-10">
           {photoSlideshow}
         </div>
-        {/* Calendar overlay - bottom portion */}
-        <div className="absolute bottom-0 left-0 right-0 h-2/5 z-20 bg-black/70 backdrop-blur-sm">
+        {/* Calendar overlay - transparent to show photo behind */}
+        <div className="absolute bottom-0 left-0 right-0 h-[55%] z-20">
           {calendar}
         </div>
       </section>
 
-      {/* Electricity - 25% */}
-      <section className="h-[25%] flex-shrink-0 border-t border-gray-800">
+      {/* Electricity - 8% */}
+      <section className="h-[8%] flex-shrink-0 border-t border-gray-800">
         {electricity}
       </section>
 
-      {/* Transport - 15% */}
-      <section className="h-[15%] flex-shrink-0 border-t border-gray-800">
+      {/* Transport - 10% */}
+      <section className="h-[10%] flex-shrink-0 border-t border-gray-800">
         {transport}
       </section>
     </div>
