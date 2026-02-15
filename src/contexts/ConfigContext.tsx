@@ -16,9 +16,19 @@ export interface KioskConfig {
     interval: number; // seconds between slides
   };
   calendar: {
+    clientId?: string;
+    clientSecret?: string;
     refreshToken?: string;
-    calendarId?: string;
+    calendars: CalendarSource[];
   };
+}
+
+// Individual calendar source (one per family member)
+export interface CalendarSource {
+  id: string;           // Google Calendar ID (email or group ID)
+  name: string;         // Display name (e.g., "Pappa", "Mamma", "Emma", "Noah")
+  color: string;        // Hex color (e.g., "#4285f4")
+  icon?: string;        // Optional emoji icon (e.g., "👨", "👩", "👧", "👦")
 }
 
 // Default configuration (Trondheim area - Planetringen)
@@ -38,8 +48,10 @@ const defaultConfig: KioskConfig = {
     interval: 30,
   },
   calendar: {
+    clientId: undefined,
+    clientSecret: undefined,
     refreshToken: undefined,
-    calendarId: undefined,
+    calendars: [],
   },
 };
 
@@ -89,6 +101,8 @@ function mergeWithDefaults(stored: Partial<KioskConfig>): KioskConfig {
     calendar: {
       ...defaultConfig.calendar,
       ...(stored.calendar ? removeUndefined(stored.calendar) : {}),
+      // Preserve calendars array from storage (don't merge with empty default)
+      calendars: stored.calendar?.calendars || defaultConfig.calendar.calendars,
     },
   };
 }
