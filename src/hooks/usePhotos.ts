@@ -31,7 +31,7 @@ export function usePhotos(): UsePhotosResult {
   const interval = config.photos.interval || 30; // seconds
 
   const [photos, setPhotos] = useState<Photo[]>(cachedPhotos?.photos || []);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(-1); // -1 means "not initialized"
   const [isLoading, setIsLoading] = useState(!cachedPhotos);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,10 +57,15 @@ export function usePhotos(): UsePhotosResult {
       setPhotos(data.photos);
       setError(null);
 
-      // Reset index if it's out of bounds
-      setCurrentIndex((prev) =>
-        prev >= data.photos.length ? 0 : prev
-      );
+      // Initialize to random index on first load, or keep current if valid
+      setCurrentIndex((prev) => {
+        if (prev === -1 && data.photos.length > 0) {
+          // First load: start at random position
+          return Math.floor(Math.random() * data.photos.length);
+        }
+        // Subsequent loads: keep position or reset if out of bounds
+        return prev >= data.photos.length ? 0 : prev;
+      });
     } catch (err) {
       console.error('Photos fetch error:', err);
       setError(err instanceof Error ? err.message : 'Kunne ikke hente bilder');
@@ -139,7 +144,7 @@ export function usePhotos(): UsePhotosResult {
 
   // Auto-advance slideshow
   useEffect(() => {
-    if (photos.length <= 1) return;
+    if (photos.length <= 1 || currentIndex < 0) return;
 
     // Clear existing interval
     if (intervalRef.current) {
@@ -164,7 +169,7 @@ export function usePhotos(): UsePhotosResult {
   // Check if photos are configured (file exists and has photos)
   const isConfigured = photos.length > 0;
 
-  const currentPhoto = photos.length > 0 ? photos[currentIndex] : null;
+  const currentPhoto = photos.length > 0 && currentIndex >= 0 ? photos[currentIndex] : null;
 
   return {
     photos,
