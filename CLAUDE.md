@@ -53,7 +53,7 @@ Each data source follows a consistent pattern:
 | Transport | `entur.ts` | `useTransport.ts` | Entur GraphQL |
 | Electricity | `tibber.ts` | `useElectricity.ts` | Tibber GraphQL |
 | Calendar | `calendar.ts` | `useCalendar.ts` | Google Calendar |
-| Photos | `photos.ts` | `usePhotos.ts` | Static JSON (from iCloud sync) |
+| Photos | `photos.ts` | `usePhotos.ts` | Backend Proxy → iCloud |
 
 ### State Management
 - **ConfigContext** (`src/contexts/ConfigContext.tsx`): API keys, location, settings
@@ -65,30 +65,38 @@ Each data source follows a consistent pattern:
 - Tailwind CSS via PostCSS (`postcss.config.js`, `tailwind.config.js`)
 - Path alias: `'@' -> 'src'`
 
-## iCloud Photo Sync
+## Photo Slideshow Backend Proxy
 
-The photo slideshow fetches images from an iCloud Shared Album via Apple's undocumented SharedStreams API.
+The photo slideshow fetches images from an iCloud Shared Album via a Node.js backend proxy that handles URL expiration automatically.
+
+### Architecture
+```
+Frontend → Nginx /api/* → Node.js :3001 → iCloud SharedStreams API
+```
+
+**Components:**
+- `server/` - Node.js proxy server (native HTTP, no Express)
+- `src/services/photos.ts` - Frontend service (fetches from `/api/photos`)
+- `src/hooks/usePhotos.ts` - React hook with 5-min client cache
 
 ### How It Works
-1. `scripts/sync-photos.sh` calls iCloud API to get photo metadata and download URLs
-2. URLs are saved to `photos.json` (served as static file)
-3. Frontend loads `photos.json` and displays photos with crossfade/Ken Burns effects
+1. Frontend requests `/api/photos` from Node.js server
+2. Server checks in-memory cache (45-min TTL)
+3. If cache miss/stale: fetches fresh URLs from iCloud API
+4. Returns photo URLs to frontend with cache metadata
+5. Frontend displays photos with crossfade/Ken Burns effects
 
-### Important: URLs Expire After ~2 Hours
-iCloud photo URLs contain an expiry timestamp (`e=` parameter). After expiration, requests return 401 Unauthorized.
+### Why Backend Proxy?
+iCloud photo URLs expire after ~2 hours (401 Unauthorized). The backend proxy:
+- Caches URLs for 45 minutes (well before expiry)
+- Serves stale data up to 90 minutes if iCloud is unavailable
+- Handles URL refresh automatically without cron jobs
 
-**On the Pi:** Handled automatically
-- Cron job runs `sync-photos.sh` hourly to refresh URLs before they expire
-- Deploy script excludes `photos.json` to avoid overwriting fresh URLs with stale local copy
-
-**On localhost:** Manual refresh needed when URLs expire
+### Development
 ```bash
-# Option 1: With URL inline
-ICLOUD_ALBUM_URL="https://www.icloud.com/sharedalbum/#B0WG6XBub2e3y" ./scripts/sync-photos.sh
-
-# Option 2: Add to .env file (one-time setup)
-echo 'ICLOUD_ALBUM_URL=https://www.icloud.com/sharedalbum/#B0WG6XBub2e3y' > .env
-./scripts/sync-photos.sh
+# Start both frontend and backend
+npm run dev                    # Frontend on :3000
+cd server && npm run dev       # Backend on :3001 (Vite proxies /api/* automatically)
 ```
 
 ### Setup on Pi
@@ -96,12 +104,17 @@ echo 'ICLOUD_ALBUM_URL=https://www.icloud.com/sharedalbum/#B0WG6XBub2e3y' > .env
 # Configure album URL
 echo 'ICLOUD_ALBUM_URL=https://www.icloud.com/sharedalbum/#TOKEN' > /var/www/kiosk/.env
 
-# Initial sync
-/var/www/kiosk/scripts/sync-photos.sh
+# Run setup script (installs systemd service, configures Nginx)
+sudo bash /var/www/kiosk/scripts/setup-photo-server.sh
 
-# Cron job (added by deploy script, or manually)
-0 * * * * /var/www/kiosk/scripts/sync-photos.sh >> /var/log/kiosk-photos.log 2>&1
+# Verify
+curl http://localhost/api/health
 ```
+
+### Fallback
+If the Node.js server fails, `scripts/sync-photos.sh` can still generate static `photos.json` manually. The frontend falls back to this file if the API is unavailable.
+
+See [Photo Slideshow Architecture](/docs/architecture/photo-slideshow.md) for detailed documentation.
 
 ## Code Style
 - TypeScript for all new code, avoid `any` type
