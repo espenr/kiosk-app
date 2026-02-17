@@ -1,0 +1,14 @@
+[Unit]
+Description=Kiosk App Auto-Updater
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=pi
+ExecStart=/var/www/kiosk/scripts/auto-update.sh update
+StandardOutput=journal
+StandardError=journal
+
+# Allow sudo for service restarts
+SupplementaryGroups=sudo

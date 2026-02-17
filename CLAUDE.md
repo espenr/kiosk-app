@@ -169,42 +169,53 @@ Tibber API `total` only includes spot price + tax. Grid fee (nettleie) is config
 - Default: 0.36 kr/kWh (Tensio/Trondheim)
 - Stored in `config.electricity.gridFee`
 
-## Next Task: Automatic Deployment to Raspberry Pi
+## Automatic Deployment
 
-Set up automatic deployment when code is pushed to main branch. Pi polls GitHub for new releases (no internet exposure required).
+The app automatically deploys when code is pushed to main branch. Pi polls GitHub for new releases every 5 minutes.
 
 ### Architecture
 ```
 Push to main → GitHub Actions builds → Creates release → Pi polls → Downloads & deploys
 ```
 
-### Files to Create
-1. `.github/workflows/release.yml` - Build and create release with `kiosk-app.tar.gz`
-2. `scripts/auto-update.sh` - Pi-side polling script (update/rollback/status commands)
-3. `scripts/kiosk-updater.service` - Systemd oneshot service
-4. `scripts/kiosk-updater.timer` - Triggers update every 5 minutes
-5. `scripts/setup-auto-deploy.sh` - One-time Pi setup
+### Files
+- `.github/workflows/release.yml` - Builds and creates GitHub release
+- `scripts/auto-update.sh` - Pi polling script (update/rollback/status)
+- `scripts/kiosk-updater.service` - Systemd oneshot service
+- `scripts/kiosk-updater.timer` - Triggers every 5 minutes
+- `scripts/setup-auto-deploy.sh` - One-time Pi setup
+
+### Pi Commands
+```bash
+# Check update status
+/var/www/kiosk/scripts/auto-update.sh status
+
+# Manual update
+/var/www/kiosk/scripts/auto-update.sh update
+
+# Rollback to previous version
+/var/www/kiosk/scripts/auto-update.sh rollback
+
+# View update logs
+journalctl -u kiosk-updater -f
+```
 
 ### Pi Directory Structure
 ```
 /var/www/kiosk                 → symlink to current version
 /var/www/kiosk-releases/
-├── v2024.02.16.1/            # Previous version
-├── v2024.02.16.2/            # Current version
-└── staging/                   # New version during deploy
+├── v2024.02.17.1/            # Previous version
+├── v2024.02.17.2/            # Current version (3 versions kept)
+└── staging/                   # Temporary during deploy
 ```
 
-### Implementation Order
-1. Create GitHub Actions workflow
-2. Push and verify release created
-3. Create auto-update.sh script
-4. Create systemd service and timer
-5. Create setup script
-6. Deploy and run setup on Pi
+### Setup on New Pi
+```bash
+# After initial manual deploy, run:
+sudo bash /var/www/kiosk/scripts/setup-auto-deploy.sh
+```
 
-Full plan: See session transcript or ask Claude to regenerate from `/docs/plans/` context
-
-## Future Task: Admin View
+## Next Task: Admin View
 
 Add a secure admin interface for configuring the kiosk from a phone/laptop on the local network.
 
