@@ -49,6 +49,27 @@ This checks SSH connectivity (mDNS then static IP), verifies tools are installed
 
 ## Deployment
 
+### Automatic Deployment (Recommended)
+
+Push to main → GitHub Actions builds → Pi auto-updates within 5 minutes.
+
+```bash
+git push origin main  # That's it!
+```
+
+**Pi commands:**
+```bash
+/var/www/kiosk/scripts/auto-update.sh status    # Check version
+/var/www/kiosk/scripts/auto-update.sh update    # Force update now
+/var/www/kiosk/scripts/auto-update.sh rollback  # Rollback to previous
+```
+
+### Manual Deployment
+
+```bash
+npm run deploy  # Build and rsync to Pi
+```
+
 ### Target Device
 
 | Property | Value |
@@ -56,11 +77,11 @@ This checks SSH connectivity (mDNS then static IP), verifies tools are installed
 | Device | Raspberry Pi Zero W 2 |
 | OS | Raspberry Pi OS |
 | IP | 192.168.50.37 |
+| mDNS | raspberrypizerow2.local |
 | Deploy user | pi |
-| Admin user | espen (has sudo) |
-| Web server | nginx |
-| Web root | /var/www/kiosk/ |
-| URL | http://192.168.50.37/ |
+| Web server | nginx + Node.js (photo proxy) |
+| Web root | /var/www/kiosk/dist/ |
+| URL | http://raspberrypizerow2.local/ |
 
 ### Pi Setup (one-time)
 
@@ -126,11 +147,25 @@ sudo chown pi:pi /var/www/kiosk
 
 ### Deploy
 
+**Automatic (after initial setup):**
+Just push to main - the Pi polls GitHub and auto-deploys within 5 minutes.
+
+**Manual:**
 ```bash
 npm run deploy
 ```
 
-This checks Pi connectivity (tries mDNS `raspberrypizerow2.local` first, falls back to `192.168.50.37`), builds the app, and rsyncs `dist/` to the Pi.
+This checks Pi connectivity (tries mDNS `raspberrypizerow2.local` first, falls back to `192.168.50.37`), builds the app, and rsyncs to the Pi.
+
+### Enable Auto-Deploy on Pi (one-time)
+
+After the first manual deploy:
+
+```bash
+# On the Pi
+sudo chown pi:pi /var/www
+sudo bash /var/www/kiosk/scripts/setup-auto-deploy.sh
+```
 
 If SSH isn't set up yet, run `bash scripts/setup-deploy.sh` for guided setup.
 
@@ -202,26 +237,39 @@ src/
   App.tsx                           # Main application
   main.tsx                          # Entry point
   components/
-    layout/Grid.tsx, GridItem.tsx    # 12x12 CSS grid system
+    layout/DashboardLayout.tsx      # Fixed vertical layout
+    sections/                       # Dashboard sections
+      Header/                       # Clock, date, weather
+      PhotoSlideshow/               # iCloud photos
+      Calendar/                     # Google Calendar
+      Electricity/                  # Tibber prices
+      Transport/                    # Entur departures
     settings/ConfigPanel.tsx        # Settings drawer
-    theme/ThemeWrapper.tsx          # Theme provider (CSS variables)
-    widgets/                        # Widget components
-      clock/                        # Clock widget
-      WidgetRegistration.tsx        # Widget type registration
   contexts/                         # React Context providers
-  types/                            # TypeScript definitions
-docs/                               # Architecture and optimization docs
-tests/                              # Puppeteer and manual tests
+  hooks/                            # Custom hooks (useWeather, usePhotos, etc.)
+  services/                         # API services (weather, tibber, entur, etc.)
+server/                             # Photo proxy server (Node.js)
+scripts/                            # Deployment and setup scripts
+  auto-update.sh                    # Pi auto-update script
+  setup-auto-deploy.sh              # One-time Pi setup
+.github/workflows/                  # GitHub Actions CI/CD
 ```
 
 ## Project Status
 
-- **Epic 1:** Project Foundation - Complete
-- **Epic 2:** Core Widgets - In Progress (Clock done, Weather/Calendar next)
-- **Epic 3:** Media & Information Widgets - Planned
-- **Epic 4:** Advanced Features - Planned
-- **Epic 5:** UI/UX Refinement - Planned
-- **Epic 6:** Deployment & Optimization - In Progress
+**Dashboard sections complete:**
+- Header (clock, date, weather via Met.no)
+- Photo slideshow (iCloud Shared Album via backend proxy)
+- Calendar (Google Calendar)
+- Electricity (Tibber prices + live consumption)
+- Transport (Entur bus departures)
+
+**Infrastructure complete:**
+- Automatic deployment via GitHub Actions
+- Photo proxy server with URL refresh
+- Pi auto-update with rollback support
+
+**Next:** Admin interface for remote configuration
 
 ## Documentation
 

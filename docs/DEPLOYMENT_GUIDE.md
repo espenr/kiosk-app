@@ -16,10 +16,27 @@ This guide covers deploying the Kiosk Application to a Raspberry Pi Zero W 2.
 │    Raspberry Pi Zero W 2 (512MB)   │
 ├─────────────────────────────────────┤
 │  NGINX (serve static files)         │ ~10MB RAM
-│  Chromium (kiosk mode)              │ ~200MB RAM
+│  Node.js (photo proxy)              │ ~30MB RAM
+│  Chromium (kiosk mode)              │ ~150-200MB RAM
 ├─────────────────────────────────────┤
-│  No backend server ✓                │
+│  Auto-updates via GitHub releases   │
 └─────────────────────────────────────┘
+```
+
+## Deployment Methods
+
+### Option 1: Automatic Deployment (Recommended)
+
+Push to main → GitHub Actions builds → Pi auto-updates within 5 minutes.
+
+See [Automatic Deployment](#automatic-deployment) section below.
+
+### Option 2: Manual Deployment
+
+From your development machine:
+
+```bash
+npm run deploy
 ```
 
 ## Installation Steps
@@ -59,10 +76,17 @@ Add configuration:
 
 ```nginx
 server {
-    listen 80;
-    server_name localhost;
-    root /var/www/kiosk;
+    listen 80 default_server;
+    root /var/www/kiosk/dist;
     index index.html;
+
+    # API proxy to photo server
+    location /api/ {
+        proxy_pass http://127.0.0.1:3001/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
 
     location / {
         try_files $uri $uri/ /index.html;
@@ -80,6 +104,8 @@ server {
     add_header X-XSS-Protection "1; mode=block" always;
 }
 ```
+
+**Note:** The root is `/var/www/kiosk/dist` (not `/var/www/kiosk`) because the release tarball places built assets in a `dist/` subdirectory.
 
 Enable the site:
 
@@ -431,9 +457,141 @@ localStorage.clear();
 location.reload();
 ```
 
-## Next Steps
+## Automatic Deployment
 
-- Set up automated deployments with GitHub Actions
-- Configure monitoring/alerting
-- Implement health check endpoint
-- Add remote configuration capability
+The Pi automatically deploys updates when code is pushed to the main branch.
+
+### How It Works
+
+```
+Push to main → GitHub Actions builds → Creates release → Pi polls → Downloads & deploys
+```
+
+1. **GitHub Actions** (`.github/workflows/release.yml`):
+   - Runs on every push to main
+   - Builds frontend and server
+   - Creates versioned GitHub release with `kiosk-app.tar.gz`
+
+2. **Pi Polling** (systemd timer):
+   - Checks GitHub every 5 minutes for new releases
+   - Downloads and extracts if version differs
+   - Preserves `.env` configuration
+   - Restarts services automatically
+
+### Directory Structure
+
+```
+/var/www/kiosk                    → symlink to current version
+/var/www/kiosk-releases/
+├── v2026.02.17.1/               # Current version
+│   ├── dist/                    # Frontend build
+│   ├── server/                  # Photo proxy server
+│   ├── scripts/                 # Deployment scripts
+│   └── VERSION                  # Version identifier
+├── v2026.02.17.0/               # Previous version (for rollback)
+└── staging/                     # Temporary during deploy
+```
+
+### Pi Setup (one-time)
+
+After the initial manual deploy:
+
+```bash
+# Fix permissions
+sudo chown pi:pi /var/www
+sudo chown -R pi:pi /var/www/kiosk
+sudo touch /var/log/kiosk-updater.log
+sudo chown pi:pi /var/log/kiosk-updater.log
+
+# Run setup script
+sudo bash /var/www/kiosk/scripts/setup-auto-deploy.sh
+```
+
+This installs:
+- Systemd timer for polling every 5 minutes
+- Sudoers rules for passwordless service restarts
+- Directory structure for versioned releases
+
+### Commands
+
+```bash
+# Check update status
+/var/www/kiosk/scripts/auto-update.sh status
+
+# Manual update
+/var/www/kiosk/scripts/auto-update.sh update
+
+# Rollback to previous version
+/var/www/kiosk/scripts/auto-update.sh rollback
+
+# View update logs
+journalctl -u kiosk-updater -f
+
+# Check timer status
+systemctl status kiosk-updater.timer
+
+# Disable auto-updates
+sudo systemctl disable --now kiosk-updater.timer
+```
+
+### Troubleshooting Auto-Deploy
+
+**Updates not happening:**
+```bash
+# Check timer is running
+systemctl status kiosk-updater.timer
+
+# Check last run
+journalctl -u kiosk-updater --since "1 hour ago"
+
+# Manual test
+/var/www/kiosk/scripts/auto-update.sh update
+```
+
+**Permission errors:**
+```bash
+# Fix common permission issues
+sudo chown pi:pi /var/www
+sudo chown -R pi:pi /var/www/kiosk-releases
+sudo chown pi:pi /var/log/kiosk-updater.log
+```
+
+**Nginx 403 after update:**
+- Ensure nginx root is `/var/www/kiosk/dist` (not `/var/www/kiosk`)
+- Reload nginx: `sudo nginx -t && sudo systemctl reload nginx`
+
+## Photo Proxy Server
+
+The photo slideshow requires a backend proxy to handle iCloud URL expiration.
+
+### Setup
+
+```bash
+# Configure iCloud album URL
+echo 'ICLOUD_ALBUM_URL=https://www.icloud.com/sharedalbum/#TOKEN' > /var/www/kiosk/.env
+
+# Install and start service
+sudo bash /var/www/kiosk/scripts/setup-photo-server.sh
+
+# Verify
+curl http://localhost/api/health
+```
+
+### Service Management
+
+```bash
+# Check status
+systemctl status kiosk-photos
+
+# View logs
+journalctl -u kiosk-photos -f
+
+# Restart
+sudo systemctl restart kiosk-photos
+```
+
+## Future Improvements
+
+- Admin interface for remote configuration
+- Health monitoring and alerting
+- Automatic browser refresh on deploy
