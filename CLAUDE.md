@@ -124,6 +124,13 @@ See [Photo Slideshow Architecture](/docs/architecture/photo-slideshow.md) for de
 - Group imports: external -> internal -> styles
 - Use Prettier for formatting (default config)
 
+## Pre-Commit Checklist
+**Always run before committing:**
+```bash
+npm run typecheck && npm run lint
+```
+This ensures CI will pass. Both commands must succeed with zero errors/warnings.
+
 ## Testing Notes
 - Puppeteer tests run with `--no-sandbox` flag for Ubuntu 23.10+ compatibility
 - Manual test pages available at `/tests/manual/`
