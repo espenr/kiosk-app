@@ -12,13 +12,18 @@ interface ConfigPanelProps {
 export default function ConfigPanel({ isOpen, onClose }: ConfigPanelProps) {
   const { config, updateApiKeys, updateLocation, updatePhotos } = useConfig();
   const [tibberToken, setTibberToken] = useState(config.apiKeys.tibber);
-  const [stopPlaceId, setStopPlaceId] = useState(config.location.stopPlaceId);
+  const [stopPlaceIds, setStopPlaceIds] = useState(config.location.stopPlaceIds.join('\n'));
   const [albumUrl, setAlbumUrl] = useState(config.photos.sharedAlbumUrl);
   const [photoInterval, setPhotoInterval] = useState(config.photos.interval);
 
   const handleSave = () => {
     updateApiKeys({ tibber: tibberToken });
-    updateLocation({ stopPlaceId });
+    // Parse stop place IDs from textarea (newline or comma separated)
+    const ids = stopPlaceIds
+      .split(/[\n,]/)
+      .map((id) => id.trim())
+      .filter((id) => id.length > 0);
+    updateLocation({ stopPlaceIds: ids });
     updatePhotos({ sharedAlbumUrl: albumUrl, interval: photoInterval });
     onClose();
   };
@@ -77,16 +82,16 @@ export default function ConfigPanel({ isOpen, onClose }: ConfigPanelProps) {
           {/* Transport */}
           <div>
             <h3 className="text-sm font-semibold text-gray-300 mb-3">Kollektivtransport (Entur)</h3>
-            <label htmlFor="stop-place-id" className="block text-sm text-gray-400 mb-1">
-              Holdeplass ID
+            <label htmlFor="stop-place-ids" className="block text-sm text-gray-400 mb-1">
+              Holdeplass ID-er (en per linje)
             </label>
-            <input
-              type="text"
-              id="stop-place-id"
-              value={stopPlaceId}
-              onChange={(e) => setStopPlaceId(e.target.value)}
-              placeholder="NSR:StopPlace:12345"
-              className="w-full px-3 py-2 border border-gray-600 bg-gray-700 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <textarea
+              id="stop-place-ids"
+              value={stopPlaceIds}
+              onChange={(e) => setStopPlaceIds(e.target.value)}
+              placeholder="NSR:StopPlace:42205"
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-600 bg-gray-700 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
             />
             <p className="text-xs text-gray-500 mt-1">
               Finn ID på entur.no
