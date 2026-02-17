@@ -36,13 +36,6 @@ export function PhotoSlideshow() {
     }
   }, [currentPhoto?.url]);
 
-  // Set initial photo immediately if available
-  useEffect(() => {
-    if (currentPhoto?.url && !displayedPhotos.current) {
-      setDisplayedPhotos({ current: currentPhoto.url, previous: null });
-    }
-  }, [currentPhoto?.url, displayedPhotos.current]);
-
   // Loading state
   if (isLoading && !isConfigured) {
     return (
