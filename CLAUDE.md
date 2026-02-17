@@ -169,96 +169,63 @@ Tibber API `total` only includes spot price + tax. Grid fee (nettleie) is config
 - Default: 0.36 kr/kWh (Tensio/Trondheim)
 - Stored in `config.electricity.gridFee`
 
-## Next Task: Raspberry Pi Kiosk Mode Setup
+## Next Task: Automatic Deployment to Raspberry Pi
 
-Configure the Pi to boot directly into fullscreen Chromium displaying the kiosk app.
+Set up automatic deployment when code is pushed to main branch. Pi polls GitHub for new releases (no internet exposure required).
 
-### Requirements
-1. Auto-login on boot (no password prompt)
-2. Auto-start Chromium in fullscreen kiosk mode
-3. Navigate to `http://localhost` on startup
-4. Disable screen blanking/screensaver
-5. Hide mouse cursor after inactivity
-
-### Scripts to Create
-
-**`scripts/setup-kiosk.sh`** - Run ON the Pi to configure:
-```bash
-#!/bin/bash
-# Install dependencies
-sudo apt-get update
-sudo apt-get install -y chromium-browser unclutter xdotool
-
-# Enable auto-login to desktop
-sudo raspi-config nonint do_boot_behaviour B4
-
-# Create autostart directory
-mkdir -p ~/.config/lxsession/LXDE-pi
-
-# Create autostart file
-cat > ~/.config/lxsession/LXDE-pi/autostart << 'EOF'
-@lxpanel --profile LXDE-pi
-@pcmanfm --desktop --profile LXDE-pi
-@xset s off
-@xset -dpms
-@xset s noblank
-@unclutter -idle 0.5 -root
-@/var/www/kiosk/scripts/kiosk.sh
-EOF
-
-# Disable screen blanking in lightdm
-sudo sed -i 's/#xserver-command=X/xserver-command=X -s 0 -dpms/' /etc/lightdm/lightdm.conf
-
-echo "Kiosk mode configured. Reboot to apply."
+### Architecture
+```
+Push to main → GitHub Actions builds → Creates release → Pi polls → Downloads & deploys
 ```
 
-**`scripts/kiosk.sh`** - Kiosk launcher (deploy to Pi):
-```bash
-#!/bin/bash
-# Wait for X to be ready
-sleep 10
+### Files to Create
+1. `.github/workflows/release.yml` - Build and create release with `kiosk-app.tar.gz`
+2. `scripts/auto-update.sh` - Pi-side polling script (update/rollback/status commands)
+3. `scripts/kiosk-updater.service` - Systemd oneshot service
+4. `scripts/kiosk-updater.timer` - Triggers update every 5 minutes
+5. `scripts/setup-auto-deploy.sh` - One-time Pi setup
 
-# Clear any previous Chromium crashes
-rm -rf ~/.config/chromium/Singleton*
-
-# Start Chromium in kiosk mode
-chromium-browser \
-  --kiosk \
-  --noerrdialogs \
-  --disable-infobars \
-  --disable-translate \
-  --disable-features=TranslateUI \
-  --disable-session-crashed-bubble \
-  --disable-restore-session-state \
-  --no-first-run \
-  --start-fullscreen \
-  http://localhost
+### Pi Directory Structure
+```
+/var/www/kiosk                 → symlink to current version
+/var/www/kiosk-releases/
+├── v2024.02.16.1/            # Previous version
+├── v2024.02.16.2/            # Current version
+└── staging/                   # New version during deploy
 ```
 
-### Setup Steps
-1. SSH into Pi: `ssh pi@raspberrypizerow2.local`
-2. Run: `bash /var/www/kiosk/scripts/setup-kiosk.sh`
-3. Configure localStorage (Tibber API key) before enabling kiosk mode
-4. Reboot: `sudo reboot`
+### Implementation Order
+1. Create GitHub Actions workflow
+2. Push and verify release created
+3. Create auto-update.sh script
+4. Create systemd service and timer
+5. Create setup script
+6. Deploy and run setup on Pi
 
-### LocalStorage Configuration on Pi
-Before enabling kiosk mode, set the Tibber API key in the browser:
-```javascript
-const stored = JSON.parse(localStorage.getItem('kiosk-app:config') || '{}');
-stored.apiKeys = { tibber: 'YOUR_TIBBER_TOKEN' };
-stored.electricity = { gridFee: 0.36 };
-localStorage.setItem('kiosk-app:config', JSON.stringify(stored));
-location.reload();
-```
+Full plan: See session transcript or ask Claude to regenerate from `/docs/plans/` context
 
-### Portrait Mode (if needed)
-Add to `/boot/config.txt`:
-```
-display_rotate=1  # 90 degrees clockwise
-```
+## Future Task: Admin View
 
-### Rollback
-```bash
-sudo raspi-config nonint do_boot_behaviour B1
-rm ~/.config/lxsession/LXDE-pi/autostart
-```
+Add a secure admin interface for configuring the kiosk from a phone/laptop on the local network.
+
+### Summary
+- Server-side config storage with AES-256-GCM encryption
+- PIN-based authentication (4-8 digits)
+- First-time setup: 6-char code displayed on TV, enter from phone
+- PIN recovery via SSH command (`kiosk-admin reset-pin`)
+- Mobile-first admin UI with setup wizard
+
+### Key Routes
+- `/admin/setup` - First-time configuration wizard
+- `/admin/login` - PIN authentication
+- `/admin/settings` - Config management
+- `/admin/reset` - Factory reset
+
+### Implementation Phases
+1. Backend auth & encrypted config storage
+2. Frontend routing (preact-router) & login
+3. Setup wizard with API validation
+4. Settings page & factory reset
+5. Recovery flow & polish
+
+Full plan: [`/docs/plans/admin-view.md`](./docs/plans/admin-view.md)
