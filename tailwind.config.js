@@ -58,6 +58,9 @@ export default {
         'fade-out': 'fadeOut 0.3s ease-out',
         'slide-in-right': 'slideInRight 0.3s ease-out',
         'slide-out-right': 'slideOutRight 0.3s ease-in',
+        'photo-fade-in': 'photoFadeIn 1.5s ease-out forwards',
+        'photo-fade-out': 'photoFadeOut 1.5s ease-in forwards',
+        'ken-burns': 'kenBurns 30s ease-out forwards',
       },
       keyframes: {
         fadeIn: {
@@ -75,6 +78,18 @@ export default {
         slideOutRight: {
           '0%': { transform: 'translateX(0)' },
           '100%': { transform: 'translateX(100%)' },
+        },
+        photoFadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        photoFadeOut: {
+          '0%': { opacity: '1' },
+          '100%': { opacity: '0' },
+        },
+        kenBurns: {
+          '0%': { transform: 'var(--kb-from, scale(1))' },
+          '100%': { transform: 'var(--kb-to, scale(1.08))' },
         },
       },
     },

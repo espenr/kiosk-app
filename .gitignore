@@ -28,3 +28,6 @@ Thumbs.db
 *.tmp
 *.temp
 .cache
+
+# Generated photo data (from sync-photos.sh)
+public/photos.json
