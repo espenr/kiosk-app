@@ -31,3 +31,6 @@ Thumbs.db
 
 # Generated photo data (from sync-photos.sh)
 public/photos.json
+
+# Server runtime data (encrypted config, sessions)
+server/data/

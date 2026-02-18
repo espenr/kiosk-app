@@ -1,5 +1,6 @@
 import { createContext, ReactNode, useContext, useState, useEffect } from 'react';
 import { STORAGE_KEYS, loadFromStorage, saveToStorage } from '../utils/storage';
+import { getConfig } from '../services/auth';
 
 // Kiosk configuration for API integrations and settings
 export interface KioskConfig {
@@ -70,6 +71,8 @@ interface ConfigContextType {
   updatePhotos: (photos: Partial<KioskConfig['photos']>) => void;
   updateCalendar: (calendar: Partial<KioskConfig['calendar']>) => void;
   isConfigured: boolean;
+  isServerBacked: boolean;
+  syncWithServer: () => Promise<void>;
 }
 
 const ConfigContext = createContext<ConfigContextType>({
@@ -81,6 +84,8 @@ const ConfigContext = createContext<ConfigContextType>({
   updatePhotos: () => {},
   updateCalendar: () => {},
   isConfigured: false,
+  isServerBacked: false,
+  syncWithServer: async () => {},
 });
 
 // Remove undefined values from an object (shallow)
@@ -125,10 +130,32 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     return mergeWithDefaults(stored);
   });
 
-  // Save to localStorage when config changes
+  const [isServerBacked, setIsServerBacked] = useState(false);
+
+  // Try to load from server on mount
   useEffect(() => {
-    saveToStorage(STORAGE_KEYS.CONFIG, config);
-  }, [config]);
+    const loadFromServer = async () => {
+      try {
+        const serverConfig = await getConfig();
+        console.log('[ConfigContext] Loaded config from server');
+        setConfig(serverConfig);
+        setIsServerBacked(true);
+      } catch {
+        // Server not available or not authenticated - fall back to localStorage
+        console.log('[ConfigContext] Server unavailable, using localStorage fallback');
+        setIsServerBacked(false);
+      }
+    };
+
+    loadFromServer();
+  }, []);
+
+  // Save to localStorage when config changes (fallback only)
+  useEffect(() => {
+    if (!isServerBacked) {
+      saveToStorage(STORAGE_KEYS.CONFIG, config);
+    }
+  }, [config, isServerBacked]);
 
   const updateConfig = (updates: Partial<KioskConfig>) => {
     setConfig(prev => ({ ...prev, ...updates }));
@@ -169,6 +196,20 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  // Sync config from server
+  const syncWithServer = async () => {
+    try {
+      const serverConfig = await getConfig();
+      console.log('[ConfigContext] Synced config from server');
+      setConfig(serverConfig);
+      setIsServerBacked(true);
+    } catch (err) {
+      console.error('[ConfigContext] Failed to sync with server:', err);
+      // Keep current config and fallback to localStorage
+      setIsServerBacked(false);
+    }
+  };
+
   // Check if minimum required settings are configured
   const isConfigured = config.location.stopPlaceIds.length > 0;
 
@@ -183,6 +224,8 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
         updatePhotos,
         updateCalendar,
         isConfigured,
+        isServerBacked,
+        syncWithServer,
       }}
     >
       {children}

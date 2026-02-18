@@ -13,6 +13,14 @@ import { fileURLToPath } from 'node:url';
 import { fetchPhotosFromICloud } from './photos.js';
 import { getCachedPhotos, setCachedPhotos, getCacheInfo } from './cache.js';
 import type { PhotosResponse, HealthResponse } from './types.js';
+import {
+  handleAuthStatus,
+  handleInitSetup,
+  handleCompleteSetup,
+  handleLogin,
+  handleLogout,
+} from './handlers/auth.js';
+import { handleGetConfig, handleUpdateConfig, handleFactoryReset } from './handlers/config.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = parseInt(process.env.PORT || '3001', 10);
@@ -51,7 +59,7 @@ function loadEnv(): void {
 }
 
 /**
- * Send JSON response
+ * Send JSON response (legacy - for photos endpoint)
  */
 function sendJson(res: ServerResponse, statusCode: number, data: unknown): void {
   res.writeHead(statusCode, {
@@ -60,6 +68,19 @@ function sendJson(res: ServerResponse, statusCode: number, data: unknown): void 
     'Cache-Control': 'no-cache',
   });
   res.end(JSON.stringify(data));
+}
+
+/**
+ * Get request origin for CORS
+ */
+function getAllowOrigin(req: IncomingMessage): string {
+  const origin = req.headers.origin;
+  // In development, allow localhost origins
+  if (origin && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+    return origin;
+  }
+  // In production, allow same-origin only
+  return origin || '*';
 }
 
 /**
@@ -144,15 +165,58 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Origin': getAllowOrigin(req),
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Credentials': 'true',
     });
     res.end();
     return;
   }
 
-  // Route requests
+  // Auth routes
+  if (url === '/api/auth/status' && req.method === 'GET') {
+    handleAuthStatus(req, res);
+    return;
+  }
+
+  if (url === '/api/auth/init-setup' && req.method === 'POST') {
+    await handleInitSetup(req, res);
+    return;
+  }
+
+  if (url === '/api/auth/complete-setup' && req.method === 'POST') {
+    await handleCompleteSetup(req, res);
+    return;
+  }
+
+  if (url === '/api/auth/login' && req.method === 'POST') {
+    await handleLogin(req, res);
+    return;
+  }
+
+  if (url === '/api/auth/logout' && req.method === 'POST') {
+    handleLogout(req, res);
+    return;
+  }
+
+  // Config routes
+  if (url === '/api/config' && req.method === 'GET') {
+    handleGetConfig(req, res);
+    return;
+  }
+
+  if (url === '/api/config' && req.method === 'PUT') {
+    await handleUpdateConfig(req, res);
+    return;
+  }
+
+  if (url === '/api/config/factory-reset' && req.method === 'POST') {
+    await handleFactoryReset(req, res);
+    return;
+  }
+
+  // Photos routes
   if (req.method === 'GET') {
     if (url === '/api/photos' || url === '/photos') {
       await handlePhotos(res);
