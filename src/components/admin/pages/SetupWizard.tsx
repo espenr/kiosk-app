@@ -209,6 +209,7 @@ export function SetupWizard() {
                 value={state.code}
                 onChange={(v) => updateState('code', v.toUpperCase())}
                 placeholder="ABC123"
+                pattern="[A-Z0-9]{6}"
                 maxLength={6}
                 required
                 error={error || undefined}

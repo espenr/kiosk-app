@@ -263,6 +263,13 @@ A secure admin interface for configuring the kiosk from a phone/laptop on the lo
 - `/admin/recovery` - PIN recovery (SSH-initiated)
 
 ### CLI Tools
+
+**Installation** (one-time setup on Pi):
+```bash
+sudo bash /var/www/kiosk/scripts/setup-admin.sh
+```
+
+**Usage**:
 ```bash
 # SSH into Pi
 ssh pi@raspberrypizerow2.local
@@ -275,6 +282,14 @@ sudo kiosk-admin factory-reset
 
 # Check system status
 kiosk-admin status
+```
+
+**Alternative** (if not installed):
+```bash
+# Use direct path to script
+sudo bash /var/www/kiosk/scripts/kiosk-admin reset-pin
+sudo bash /var/www/kiosk/scripts/kiosk-admin factory-reset
+bash /var/www/kiosk/scripts/kiosk-admin status
 ```
 
 Full plan: [`/docs/plans/admin-view.md`](./docs/plans/admin-view.md)

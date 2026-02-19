@@ -32,10 +32,37 @@ export function RecoveryPage() {
             {/* Reset PIN Section */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
               <h2 className="text-xl font-semibold mb-4 text-blue-900">Step 2: Reset PIN</h2>
-              <div className="bg-gray-900 text-gray-100 p-4 rounded font-mono text-sm overflow-x-auto">
+
+              {/* First check if kiosk-admin is installed */}
+              <p className="text-sm text-blue-800 mb-3">
+                First, check if the <code className="bg-blue-100 px-1 rounded">kiosk-admin</code> command is
+                installed:
+              </p>
+              <div className="bg-gray-900 text-gray-100 p-4 rounded font-mono text-sm overflow-x-auto mb-3">
+                <code>which kiosk-admin</code>
+              </div>
+
+              {/* If installed */}
+              <p className="text-sm text-blue-800 mb-2 font-semibold">
+                If installed (shows /usr/local/bin/kiosk-admin):
+              </p>
+              <div className="bg-gray-900 text-gray-100 p-4 rounded font-mono text-sm overflow-x-auto mb-4">
                 <code>sudo kiosk-admin reset-pin</code>
               </div>
-              <p className="text-sm text-blue-800 mt-3">This will:</p>
+
+              {/* If NOT installed */}
+              <p className="text-sm text-blue-800 mb-2 font-semibold">If NOT installed (no output):</p>
+              <div className="bg-gray-900 text-gray-100 p-4 rounded font-mono text-sm overflow-x-auto mb-2">
+                <code>
+                  sudo bash /var/www/kiosk/scripts/kiosk-admin reset-pin
+                </code>
+              </div>
+              <p className="text-xs text-blue-700 mb-3">
+                Or install it first: <code className="bg-blue-100 px-1 rounded">sudo bash
+                /var/www/kiosk/scripts/setup-admin.sh</code>
+              </p>
+
+              <p className="text-sm text-blue-800 mt-4">This will:</p>
               <ul className="text-sm text-blue-800 mt-2 list-disc list-inside space-y-1">
                 <li>Delete the PIN (auth.json)</li>
                 <li>Preserve your settings (config.enc.json)</li>
@@ -71,9 +98,13 @@ export function RecoveryPage() {
               <p className="text-sm text-yellow-800 mb-3">
                 If you want to delete ALL data (settings + PIN) and start fresh:
               </p>
-              <div className="bg-gray-900 text-gray-100 p-4 rounded font-mono text-sm overflow-x-auto">
+              <div className="bg-gray-900 text-gray-100 p-4 rounded font-mono text-sm overflow-x-auto mb-2">
                 <code>sudo kiosk-admin factory-reset</code>
               </div>
+              <p className="text-xs text-yellow-700 mb-3">
+                Or if not installed: <code className="bg-yellow-100 px-1 rounded">sudo bash
+                /var/www/kiosk/scripts/kiosk-admin factory-reset</code>
+              </p>
               <p className="text-sm text-yellow-800 mt-3">
                 ⚠️ This will erase all configuration including API keys, location, and calendar settings.
               </p>
@@ -83,9 +114,13 @@ export function RecoveryPage() {
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
               <h2 className="text-xl font-semibold mb-4 text-gray-900">Check Status</h2>
               <p className="text-sm text-gray-600 mb-3">View current setup state and data files:</p>
-              <div className="bg-gray-900 text-gray-100 p-4 rounded font-mono text-sm overflow-x-auto">
-                <code>sudo kiosk-admin status</code>
+              <div className="bg-gray-900 text-gray-100 p-4 rounded font-mono text-sm overflow-x-auto mb-2">
+                <code>kiosk-admin status</code>
               </div>
+              <p className="text-xs text-gray-500">
+                Or if not installed: <code className="bg-gray-200 px-1 rounded">bash
+                /var/www/kiosk/scripts/kiosk-admin status</code>
+              </p>
             </div>
           </div>
 

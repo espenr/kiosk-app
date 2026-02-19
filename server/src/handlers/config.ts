@@ -114,7 +114,7 @@ export async function handleUpdateConfig(req: IncomingMessage, res: ServerRespon
   } catch (err) {
     console.error('Update config error:', err);
     const message = err instanceof Error ? err.message : 'Failed to update config';
-    const statusCode = message.includes('Authentication') ? 401 : 500;
+    const statusCode = message.includes('authenticate') || message.includes('Session') ? 401 : 500;
     sendJson(res, statusCode, { error: message }, { allowOrigin: req.headers.origin, allowCredentials: true });
   }
 }
@@ -157,7 +157,7 @@ export async function handleFactoryReset(req: IncomingMessage, res: ServerRespon
   } catch (err) {
     console.error('Factory reset error:', err);
     const message = err instanceof Error ? err.message : 'Failed to reset';
-    const statusCode = message.includes('Authentication') ? 401 : 500;
+    const statusCode = message.includes('authenticate') || message.includes('Session') ? 401 : 500;
     sendJson(res, statusCode, { error: message }, { allowOrigin: req.headers.origin, allowCredentials: true });
   }
 }
