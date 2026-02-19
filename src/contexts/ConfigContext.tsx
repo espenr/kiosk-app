@@ -135,27 +135,35 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
   // Try to load from server on mount
   useEffect(() => {
     const loadFromServer = async () => {
+      const isAdminRoute = window.location.pathname.startsWith('/admin');
+
+      // Only try authenticated config on admin routes
+      if (isAdminRoute) {
+        try {
+          const serverConfig = await getConfig();
+          console.log('[ConfigContext] Loaded config from server (authenticated)');
+          setConfig(serverConfig);
+          setIsServerBacked(true);
+          return; // Success, no need for fallback
+        } catch {
+          // Auth failed on admin route, fall through to public config
+          console.log('[ConfigContext] Auth failed on admin route, falling back to public config');
+        }
+      }
+
+      // For dashboard or if admin auth failed, load public config
       try {
-        // Try authenticated config first (for admin settings page)
-        const serverConfig = await getConfig();
-        console.log('[ConfigContext] Loaded config from server (authenticated)');
-        setConfig(serverConfig);
+        const publicConfig = await getPublicConfig();
+        console.log('[ConfigContext] Loaded public config from server');
+        // Merge public config with localStorage for missing fields
+        const stored = loadFromStorage<Partial<KioskConfig>>(STORAGE_KEYS.CONFIG, {});
+        const merged = mergeWithDefaults({ ...stored, ...publicConfig });
+        setConfig(merged);
         setIsServerBacked(true);
       } catch {
-        // Fall back to public config (for dashboard)
-        try {
-          const publicConfig = await getPublicConfig();
-          console.log('[ConfigContext] Loaded public config from server');
-          // Merge public config with localStorage for missing fields
-          const stored = loadFromStorage<Partial<KioskConfig>>(STORAGE_KEYS.CONFIG, {});
-          const merged = mergeWithDefaults({ ...stored, ...publicConfig });
-          setConfig(merged);
-          setIsServerBacked(true);
-        } catch {
-          // Server not available - fall back to localStorage
-          console.log('[ConfigContext] Server unavailable, using localStorage fallback');
-          setIsServerBacked(false);
-        }
+        // Server not available - fall back to localStorage
+        console.log('[ConfigContext] Server unavailable, using localStorage fallback');
+        setIsServerBacked(false);
       }
     };
 
