@@ -16,6 +16,7 @@ REPO="espenr/kiosk-app"
 RELEASES_DIR="/var/www/kiosk-releases"
 CURRENT_LINK="/var/www/kiosk"
 STAGING_DIR="$RELEASES_DIR/staging"
+DATA_DIR="/var/www/kiosk-data"  # Shared data directory (persists across deployments)
 MAX_VERSIONS=3  # Keep last N versions for rollback
 LOG_FILE="/var/log/kiosk-updater.log"
 
@@ -65,6 +66,29 @@ get_download_url() {
 ensure_directories() {
     mkdir -p "$RELEASES_DIR"
     mkdir -p "$(dirname "$LOG_FILE")"
+    mkdir -p "$DATA_DIR"
+}
+
+setup_data_symlink() {
+    local version_dir="$1"
+    local data_link="$version_dir/server/data"
+
+    # Remove existing data directory/symlink if it exists
+    if [[ -e "$data_link" ]]; then
+        if [[ -L "$data_link" ]]; then
+            # Already a symlink, remove it
+            rm "$data_link"
+        elif [[ -d "$data_link" ]]; then
+            # It's a real directory, migrate data to shared location
+            log "Migrating data from $data_link to $DATA_DIR"
+            cp -a "$data_link"/* "$DATA_DIR/" 2>/dev/null || true
+            rm -rf "$data_link"
+        fi
+    fi
+
+    # Create symlink to shared data directory
+    ln -sf "$DATA_DIR" "$data_link"
+    log "Linked $data_link -> $DATA_DIR"
 }
 
 cleanup_old_versions() {
@@ -155,6 +179,9 @@ cmd_update() {
             cd "$RELEASES_DIR/$latest/server"
             npm install --omit=dev 2>/dev/null || npm install --production
         fi
+
+        # Set up data symlink
+        setup_data_symlink "$RELEASES_DIR/$latest"
     fi
 
     # Update symlink atomically
@@ -202,6 +229,9 @@ cmd_rollback() {
     if [[ -f "$CURRENT_LINK/.env" ]]; then
         cp "$CURRENT_LINK/.env" "$RELEASES_DIR/$previous/.env"
     fi
+
+    # Set up data symlink for rollback version
+    setup_data_symlink "$RELEASES_DIR/$previous"
 
     # Update symlink
     ln -sfn "$RELEASES_DIR/$previous" "${CURRENT_LINK}.new"

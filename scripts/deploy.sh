@@ -81,6 +81,37 @@ echo ""
 echo "Installing server dependencies..."
 ssh "$PI_USER@$PI_HOST" "cd $PI_DIR/server && npm install --omit=dev 2>/dev/null || npm install --production"
 
+# Ensure data directory is a symlink to shared location
+echo ""
+echo "Setting up data directory..."
+ssh "$PI_USER@$PI_HOST" "bash -c '
+  DATA_DIR=\"/var/www/kiosk-data\"
+  DATA_LINK=\"$PI_DIR/server/data\"
+
+  # Create shared data directory if it doesn'\''t exist
+  mkdir -p \"\$DATA_DIR\"
+
+  # If data exists as a real directory, migrate it
+  if [[ -d \"\$DATA_LINK\" && ! -L \"\$DATA_LINK\" ]]; then
+    echo \"Migrating data to shared location...\"
+    cp -a \"\$DATA_LINK\"/* \"\$DATA_DIR/\" 2>/dev/null || true
+    rm -rf \"\$DATA_LINK\"
+  fi
+
+  # Remove broken symlink if exists
+  if [[ -L \"\$DATA_LINK\" && ! -e \"\$DATA_LINK\" ]]; then
+    rm \"\$DATA_LINK\"
+  fi
+
+  # Create symlink if it doesn'\''t exist
+  if [[ ! -e \"\$DATA_LINK\" ]]; then
+    ln -sf \"\$DATA_DIR\" \"\$DATA_LINK\"
+    echo \"Linked \$DATA_LINK -> \$DATA_DIR\"
+  else
+    echo \"Data symlink already configured\"
+  fi
+'"
+
 # Check if photo proxy service is configured
 echo ""
 echo "Checking photo proxy server..."
