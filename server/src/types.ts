@@ -112,3 +112,21 @@ export interface UpdateConfigRequest {
 export interface FactoryResetRequest {
   pin: string;
 }
+
+/**
+ * Public config - safe to expose without authentication
+ * Contains only non-sensitive data needed by the dashboard
+ */
+export interface PublicConfig {
+  location: {
+    latitude: number;
+    longitude: number;
+    stopPlaceIds: string[];
+  };
+  photos: {
+    interval: number;
+  };
+  calendar: {
+    clientId?: string; // OAuth Client ID is public (not sensitive)
+  };
+}

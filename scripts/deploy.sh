@@ -56,7 +56,7 @@ rsync -avz --delete \
   --exclude 'scripts/' \
   --exclude '.env' \
   --exclude 'photos.json' \
-  "$LOCAL_DIST" "$PI_USER@$PI_HOST:$PI_DIR/"
+  "$LOCAL_DIST" "$PI_USER@$PI_HOST:$PI_DIR/dist/"
 
 # Deploy scripts (without deleting existing files like .env)
 echo ""

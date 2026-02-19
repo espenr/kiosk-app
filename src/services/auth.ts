@@ -80,10 +80,28 @@ export async function logout(): Promise<{ success: boolean }> {
 }
 
 /**
- * Get current configuration
+ * Get current configuration (requires authentication)
  */
 export async function getConfig(): Promise<KioskConfig> {
   return apiFetch<KioskConfig>('/config');
+}
+
+/**
+ * Get public configuration (no authentication required)
+ * Returns only non-sensitive data needed by the dashboard
+ */
+export async function getPublicConfig(): Promise<Partial<KioskConfig>> {
+  const response = await fetch(`${API_BASE}/config/public`, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  return response.json();
 }
 
 /**

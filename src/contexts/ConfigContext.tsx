@@ -1,6 +1,6 @@
 import { createContext, ReactNode, useContext, useState, useEffect } from 'react';
 import { STORAGE_KEYS, loadFromStorage, saveToStorage } from '../utils/storage';
-import { getConfig } from '../services/auth';
+import { getConfig, getPublicConfig } from '../services/auth';
 
 // Kiosk configuration for API integrations and settings
 export interface KioskConfig {
@@ -136,14 +136,26 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const loadFromServer = async () => {
       try {
+        // Try authenticated config first (for admin settings page)
         const serverConfig = await getConfig();
-        console.log('[ConfigContext] Loaded config from server');
+        console.log('[ConfigContext] Loaded config from server (authenticated)');
         setConfig(serverConfig);
         setIsServerBacked(true);
       } catch {
-        // Server not available or not authenticated - fall back to localStorage
-        console.log('[ConfigContext] Server unavailable, using localStorage fallback');
-        setIsServerBacked(false);
+        // Fall back to public config (for dashboard)
+        try {
+          const publicConfig = await getPublicConfig();
+          console.log('[ConfigContext] Loaded public config from server');
+          // Merge public config with localStorage for missing fields
+          const stored = loadFromStorage<Partial<KioskConfig>>(STORAGE_KEYS.CONFIG, {});
+          const merged = mergeWithDefaults({ ...stored, ...publicConfig });
+          setConfig(merged);
+          setIsServerBacked(true);
+        } catch {
+          // Server not available - fall back to localStorage
+          console.log('[ConfigContext] Server unavailable, using localStorage fallback');
+          setIsServerBacked(false);
+        }
       }
     };
 

@@ -3,11 +3,11 @@
  */
 
 import { IncomingMessage, ServerResponse } from 'node:http';
-import { loadAuthData, loadConfig, saveConfig, deleteConfigData } from '../utils/storage.js';
+import { loadAuthData, loadConfig, saveConfig, deleteConfigData, loadPublicConfig } from '../utils/storage.js';
 import { hashPin } from '../utils/crypto.js';
 import { getConfigFromSession, cacheConfigInSession } from '../utils/sessions.js';
 import { parseJsonBody, sendJson, requireAuth } from '../utils/http.js';
-import type { UpdateConfigRequest, FactoryResetRequest } from '../types.js';
+import type { UpdateConfigRequest, FactoryResetRequest, PublicConfig } from '../types.js';
 
 /**
  * GET /api/config
@@ -29,6 +29,47 @@ export function handleGetConfig(req: IncomingMessage, res: ServerResponse): void
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Authentication required';
     sendJson(res, 401, { error: message }, { allowOrigin: req.headers.origin, allowCredentials: true });
+  }
+}
+
+/**
+ * GET /api/config/public
+ * Get public configuration (no authentication required)
+ * Returns only non-sensitive data needed by the dashboard
+ */
+export function handleGetPublicConfig(req: IncomingMessage, res: ServerResponse): void {
+  try {
+    // Load auth data to check if setup is complete
+    const authData = loadAuthData();
+    if (!authData || !authData.setupComplete) {
+      // Return default config if setup not complete
+      const defaultConfig: PublicConfig = {
+        location: { latitude: 63.4325, longitude: 10.6379, stopPlaceIds: [] },
+        photos: { interval: 30 },
+        calendar: {},
+      };
+      sendJson(res, 200, defaultConfig, { allowOrigin: req.headers.origin });
+      return;
+    }
+
+    // Load public config from disk
+    const publicConfig = loadPublicConfig();
+    if (!publicConfig) {
+      // Return default config if file doesn't exist
+      const defaultConfig: PublicConfig = {
+        location: { latitude: 63.4325, longitude: 10.6379, stopPlaceIds: [] },
+        photos: { interval: 30 },
+        calendar: {},
+      };
+      sendJson(res, 200, defaultConfig, { allowOrigin: req.headers.origin });
+      return;
+    }
+
+    sendJson(res, 200, publicConfig, { allowOrigin: req.headers.origin });
+  } catch (err) {
+    console.error('Get public config error:', err);
+    const message = err instanceof Error ? err.message : 'Failed to load public config';
+    sendJson(res, 500, { error: message }, { allowOrigin: req.headers.origin });
   }
 }
 

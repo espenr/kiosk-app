@@ -70,14 +70,16 @@ flowchart TB
 | lightdm | systemd | - | Display manager, auto-login |
 | avahi-daemon | systemd | 5353 | mDNS hostname resolution |
 
-## Directory Structure
+## Application Directory
 
 ```
 /var/www/kiosk/
-├── index.html              # Main application entry
-├── assets/
-│   ├── index-*.js          # Bundled JavaScript
-│   └── index-*.css         # Bundled CSS
+├── dist/                   # Frontend built files (Nginx root)
+│   ├── index.html          # Main application entry
+│   ├── assets/
+│   │   ├── index-*.js      # Bundled JavaScript
+│   │   └── index-*.css     # Bundled CSS
+│   └── photos.json         # Fallback static photos
 ├── server/
 │   ├── dist/
 │   │   ├── index.js        # Photo proxy server
@@ -90,7 +92,6 @@ flowchart TB
 │   ├── setup-photo-server.sh
 │   ├── sync-photos.sh      # Legacy (backup)
 │   └── kiosk-photos.service
-├── photos.json             # Fallback static photos
 └── .env                    # Configuration secrets
 ```
 
@@ -103,7 +104,7 @@ flowchart TB
 ```nginx
 server {
     listen 80 default_server;
-    root /var/www/kiosk;
+    root /var/www/kiosk/dist;  # Points to dist/ within symlink target (auto-deploy) or direct path (manual deploy)
     index index.html;
 
     location /api/ {
@@ -120,6 +121,36 @@ server {
 ```
 
 **Symlink:** `/etc/nginx/sites-enabled/kiosk -> /etc/nginx/sites-available/kiosk`
+
+### Directory Structure
+
+The kiosk uses a consistent directory structure regardless of deployment method:
+
+```
+/var/www/kiosk/
+├── dist/                      # Frontend built files (served by Nginx)
+│   ├── index.html
+│   ├── assets/
+│   │   ├── index-*.js
+│   │   └── index-*.css
+│   ├── puppeteer-test.html
+│   └── test.html
+├── server/                    # Backend Node.js server
+│   ├── dist/                  # Compiled TypeScript
+│   └── package.json
+├── scripts/                   # Deployment and maintenance scripts
+├── .env                       # Environment variables (iCloud album URL)
+└── VERSION                    # Current version (auto-deploy only)
+```
+
+**Deployment Method Differences:**
+
+| Method | Structure | Notes |
+|--------|-----------|-------|
+| **Manual Deploy** (`deploy.sh`) | Direct files in `/var/www/kiosk/dist/` | Simple, immediate |
+| **Auto-Deploy** (`auto-update.sh`) | Symlink: `/var/www/kiosk` → `/var/www/kiosk-releases/v2026.XX.XX/` | Versioned, atomic rollback |
+
+Both methods result in Nginx serving from `/var/www/kiosk/dist/`.
 
 ### Photo Proxy Service
 

@@ -31,6 +31,20 @@ This file provides guidance to Claude Code when working with this repository.
 - **Target Device:** Raspberry Pi Zero W 2 (512MB RAM)
 - **Bundle Size:** ~66 KB (13 KB CSS + 53 KB JS)
 
+## Deployment Architecture
+
+**Directory Structure:** All deployments follow the standard structure documented in [`docs/architecture/deployment.md`](./docs/architecture/deployment.md)
+
+**Critical:** Nginx always serves from `/var/www/kiosk/dist/` regardless of deployment method (manual or auto-deploy).
+
+**Key Files:**
+- Frontend: `/var/www/kiosk/dist/` (Nginx root)
+- Backend: `/var/www/kiosk/server/dist/` (Node.js on port 3001)
+- Environment: `/var/www/kiosk/.env`
+- Runtime Data: `/var/www/kiosk/server/data/` (encrypted config, auth, machine secret)
+
+See deployment guide: [`docs/DEPLOYMENT_GUIDE.md`](./docs/DEPLOYMENT_GUIDE.md)
+
 ## Architecture
 
 ### Fixed-Layout Dashboard
@@ -111,6 +125,11 @@ sudo bash /var/www/kiosk/scripts/setup-photo-server.sh
 curl http://localhost/api/health
 ```
 
+**Directory structure after deployment:**
+- Frontend: `/var/www/kiosk/dist/` (served by Nginx)
+- Backend: `/var/www/kiosk/server/` (Node.js on port 3001)
+- Environment: `/var/www/kiosk/.env`
+
 ### Fallback
 If the Node.js server fails, `scripts/sync-photos.sh` can still generate static `photos.json` manually. The frontend falls back to this file if the API is unavailable.
 
@@ -160,7 +179,7 @@ See full implementation plan: [`/docs/plans/kiosk-redesign.md`](./docs/plans/kio
 - Phase 4: Electricity Section (Tibber) - **COMPLETE**
 - Phase 5: Calendar Section (Google Calendar) - **COMPLETE**
 - Phase 6: Photo Slideshow (iCloud) - **COMPLETE**
-- Phase 7: Settings & Polish - **IN PROGRESS**
+- Phase 7: Settings & Polish (Admin View) - **COMPLETE**
 
 ## Tibber Live Consumption
 
@@ -222,28 +241,42 @@ journalctl -u kiosk-updater -f
 sudo bash /var/www/kiosk/scripts/setup-auto-deploy.sh
 ```
 
-## Next Task: Admin View
+## Admin View (Complete)
 
-Add a secure admin interface for configuring the kiosk from a phone/laptop on the local network.
+A secure admin interface for configuring the kiosk from a phone/laptop on the local network.
 
-### Summary
-- Server-side config storage with AES-256-GCM encryption
-- PIN-based authentication (4-8 digits)
-- First-time setup: 6-char code displayed on TV, enter from phone
-- PIN recovery via SSH command (`kiosk-admin reset-pin`)
-- Mobile-first admin UI with setup wizard
+### Features
+- ✅ Server-side config storage with AES-256-GCM encryption
+- ✅ PIN-based authentication (4-8 digits)
+- ✅ First-time setup: 6-char code displayed on TV, enter from phone
+- ✅ PIN recovery via SSH command (`kiosk-admin reset-pin`)
+- ✅ Mobile-first admin UI with setup wizard
+- ✅ Settings management interface
+- ✅ Factory reset functionality
+- ✅ CLI tools for SSH recovery
 
 ### Key Routes
 - `/admin/setup` - First-time configuration wizard
 - `/admin/login` - PIN authentication
 - `/admin/settings` - Config management
 - `/admin/reset` - Factory reset
+- `/admin/recovery` - PIN recovery (SSH-initiated)
 
-### Implementation Phases
-1. Backend auth & encrypted config storage
-2. Frontend routing (preact-router) & login
-3. Setup wizard with API validation
-4. Settings page & factory reset
-5. Recovery flow & polish
+### CLI Tools
+```bash
+# SSH into Pi
+ssh pi@raspberrypizerow2.local
+
+# Reset PIN (preserves settings)
+sudo kiosk-admin reset-pin
+
+# Factory reset (deletes all data)
+sudo kiosk-admin factory-reset
+
+# Check system status
+kiosk-admin status
+```
 
 Full plan: [`/docs/plans/admin-view.md`](./docs/plans/admin-view.md)
+
+Implementation history: [`/docs/archive/implementation-history/`](./docs/archive/implementation-history/)

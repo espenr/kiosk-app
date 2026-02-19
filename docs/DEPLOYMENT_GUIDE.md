@@ -105,7 +105,7 @@ server {
 }
 ```
 
-**Note:** The root is `/var/www/kiosk/dist` (not `/var/www/kiosk`) because the release tarball places built assets in a `dist/` subdirectory.
+**Note:** Both deployment methods create the same directory structure with files in `/var/www/kiosk/dist/`.
 
 Enable the site:
 

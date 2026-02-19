@@ -11,15 +11,16 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, unlinkSync, chmodSy
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { encrypt, decrypt } from './crypto.js';
-import type { KioskConfig, AuthData } from '../types.js';
+import type { KioskConfig, AuthData, PublicConfig } from '../types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, '..', '..', 'data');
 const AUTH_FILE = join(DATA_DIR, 'auth.json');
 const CONFIG_FILE = join(DATA_DIR, 'config.enc.json');
+const PUBLIC_CONFIG_FILE = join(DATA_DIR, 'config.public.json');
 
 // Re-export types for convenience
-export type { AuthData, KioskConfig };
+export type { AuthData, KioskConfig, PublicConfig };
 
 /**
  * Ensure data directory exists with secure permissions
@@ -107,13 +108,57 @@ export function saveConfig(config: KioskConfig, pin: string): void {
 
   writeFileSync(CONFIG_FILE, encrypted, { mode: 0o600 });
   chmodSync(CONFIG_FILE, 0o600); // Ensure permissions
+
+  // Also save public config (unencrypted, non-sensitive data)
+  savePublicConfig(config);
+}
+
+/**
+ * Extract and save public config from full config
+ * Public config contains only non-sensitive data that can be exposed without auth
+ */
+export function savePublicConfig(config: KioskConfig): void {
+  ensureDataDir();
+
+  const publicConfig: PublicConfig = {
+    location: config.location,
+    photos: {
+      interval: config.photos.interval,
+    },
+    calendar: {
+      clientId: config.calendar.clientId, // OAuth Client ID is public
+    },
+  };
+
+  const content = JSON.stringify(publicConfig, null, 2);
+  writeFileSync(PUBLIC_CONFIG_FILE, content, { mode: 0o644 }); // Readable by all
+}
+
+/**
+ * Load public config from disk
+ * Returns null if file doesn't exist
+ */
+export function loadPublicConfig(): PublicConfig | null {
+  ensureDataDir();
+
+  if (!existsSync(PUBLIC_CONFIG_FILE)) {
+    return null;
+  }
+
+  try {
+    const content = readFileSync(PUBLIC_CONFIG_FILE, 'utf-8');
+    return JSON.parse(content);
+  } catch (err) {
+    console.error('Failed to load public config:', err);
+    return null;
+  }
 }
 
 /**
  * Delete all config and auth data (factory reset)
  */
 export function deleteConfigData(): void {
-  const files = [AUTH_FILE, CONFIG_FILE];
+  const files = [AUTH_FILE, CONFIG_FILE, PUBLIC_CONFIG_FILE];
 
   for (const file of files) {
     if (existsSync(file)) {

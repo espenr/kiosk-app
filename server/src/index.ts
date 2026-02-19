@@ -20,7 +20,12 @@ import {
   handleLogin,
   handleLogout,
 } from './handlers/auth.js';
-import { handleGetConfig, handleUpdateConfig, handleFactoryReset } from './handlers/config.js';
+import {
+  handleGetConfig,
+  handleGetPublicConfig,
+  handleUpdateConfig,
+  handleFactoryReset,
+} from './handlers/config.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = parseInt(process.env.PORT || '3001', 10);
@@ -201,6 +206,11 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
   }
 
   // Config routes
+  if (url === '/api/config/public' && req.method === 'GET') {
+    handleGetPublicConfig(req, res);
+    return;
+  }
+
   if (url === '/api/config' && req.method === 'GET') {
     handleGetConfig(req, res);
     return;

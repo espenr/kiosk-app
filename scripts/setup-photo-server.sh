@@ -71,6 +71,16 @@ if [ -f "$NGINX_CONF" ]; then
         echo "Reloading Nginx..."
         systemctl reload nginx
     fi
+
+    # Ensure root directive points to dist/ subdirectory
+    if ! grep -q "root /var/www/kiosk/dist;" "$NGINX_CONF"; then
+        echo "Setting Nginx root to /var/www/kiosk/dist..."
+        sed -i 's|root .*/var/www/kiosk[^;]*;|root /var/www/kiosk/dist;|' "$NGINX_CONF"
+        echo "Testing Nginx configuration..."
+        nginx -t
+        echo "Reloading Nginx..."
+        systemctl reload nginx
+    fi
 else
     echo ""
     echo "Nginx config not found at $NGINX_CONF"
