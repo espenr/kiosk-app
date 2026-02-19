@@ -34,3 +34,4 @@ public/photos.json
 
 # Server runtime data (encrypted config, sessions)
 server/data/
+.DS_Store

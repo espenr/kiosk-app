@@ -4,6 +4,18 @@ This directory contains historical documentation from the kiosk app development 
 
 ## Contents
 
+### Test Scripts
+
+Development testing scripts used during admin view implementation:
+
+- **test-backend.sh** - Basic backend auth API testing
+- **test-phase4.sh** - Setup wizard integration tests (manual)
+- **test-phase5.sh** - Settings UI integration tests (manual)
+- **test-phase6.sh** - CLI tool (kiosk-admin) testing
+- **test-phase7.sh** - Comprehensive backend API tests (automated)
+
+These scripts were useful during development but are now archived since all phases are complete.
+
 ### Optimization & Migration (Phase 2)
 - **PHASE_2_OPTIMIZATION_PLAN.md** - Plan for migrating from Chakra UI to Tailwind CSS
 - **SESSION_1_RESULTS.md** - Backend removal & Preact alias setup results

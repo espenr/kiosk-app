@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026-02-19] - Archive Phase Test Scripts
+
+### Changed
+- Archived 5 phase test scripts to `docs/archive/implementation-history/`
+  - `test-backend.sh`, `test-phase4.sh`, `test-phase5.sh`, `test-phase6.sh`, `test-phase7.sh`
+- Added `.DS_Store` to `.gitignore`
+
+### Removed
+- `tests/.DS_Store` (macOS metadata file)
+
+### Kept
+- `scripts/verify-pi-config.sh` - Still useful for Pi diagnostics
+
 ## [2026-02-19] - Test Cleanup
 
 ### Removed
