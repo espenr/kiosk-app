@@ -1,66 +1,183 @@
 # Kiosk App Testing
 
-This directory contains all test-related files for the Kiosk App project.
+This directory contains test-related files for the Kiosk App project.
 
 ## Directory Structure
 
-- `/tests` - Root test directory
-  - `/puppeteer` - Puppeteer automated browser testing
-  - `/manual` - Manual test pages
-  - `/screenshots` - Generated screenshots from automated tests
+```
+tests/
+├── README.md          # This file
+└── screenshots/       # Generated screenshots (if needed)
+```
 
-## Test Types
+## Current Testing Approach
 
-### Automated Browser Tests
+The kiosk app uses a **fixed-layout architecture** with specific sections (Header, Photo+Calendar, Electricity, Transport). Testing focuses on integration and deployment verification rather than component-level unit tests.
 
-Puppeteer is used for browser automation testing:
+### Manual Testing
+
+**Local Development:**
+```bash
+npm run dev
+# Visit http://localhost:3000/
+# Verify all sections load and display data correctly
+```
+
+**Pre-Commit Verification:**
+```bash
+npm run typecheck && npm run lint
+# Both must pass before committing
+```
+
+**Deployment Testing:**
+```bash
+npm run deploy
+# Verify deployment to Pi completes successfully
+# Check dashboard loads at http://raspberrypizerow2.local/
+```
+
+### Integration Testing on Pi
+
+After deployment, verify each section:
+
+1. **Header Section**
+   - Clock displays current time
+   - Date displays correctly
+   - Weather shows temperature and icon
+
+2. **Photo Slideshow**
+   - Photos load from iCloud Shared Album
+   - Transitions work smoothly
+   - Fallback to `/photos.json` if API unavailable
+
+3. **Calendar Section**
+   - Events display with correct times
+   - Google Calendar integration works
+   - Handles missing OAuth gracefully
+
+4. **Electricity Section**
+   - Current price displays
+   - Hourly chart renders
+   - Live consumption updates (if Pulse configured)
+
+5. **Transport Section**
+   - Bus departures show
+   - Real-time updates work
+   - Entur API integration works
+
+### Admin Interface Testing
+
+**Setup Flow:**
+```bash
+# First time setup
+curl http://raspberrypizerow2.local/admin
+# Should show setup code on TV
+# Complete wizard on phone/laptop
+```
+
+**Settings Management:**
+```bash
+# Login with PIN
+# Verify all configuration sections load
+# Test save/update functionality
+```
+
+**Recovery:**
+```bash
+# SSH into Pi
+ssh pi@raspberrypizerow2.local
+sudo kiosk-admin reset-pin
+# Verify new setup code displayed
+```
+
+## Test Data
+
+### Fallback Photo Data
+
+**File:** `/public/photos.json`
+- Contains 97 iCloud photo URLs
+- Used as fallback when `/api/photos` unavailable
+- Updated by photo proxy server automatically
+
+## Automated Testing
+
+Currently, the app does not use automated unit/integration tests. The focus is on:
+
+1. **TypeScript type checking** - Catches type errors at compile time
+2. **ESLint** - Enforces code quality and consistency
+3. **Manual testing** - Verifies functionality on target device (Pi Zero W 2)
+
+### Why No Automated Browser Tests?
+
+The previous widget-based architecture used Puppeteer for automated testing. The current fixed-layout architecture is simpler and more stable:
+
+- **Fixed layout** - No dynamic widget positioning to test
+- **Target device specific** - 768x1366 portrait display on Pi Zero W 2
+- **API-driven** - Data from external APIs (harder to mock reliably)
+- **Visual verification needed** - Many issues are visual (layout, styling)
+
+Manual testing on the actual Pi device provides better coverage than automated browser tests.
+
+## Adding New Tests
+
+If you need to add automated tests in the future:
+
+1. **Consider Vitest** for unit tests (faster than Puppeteer)
+2. **Use Playwright** for e2e tests (more reliable than Puppeteer)
+3. **Test on actual Pi** - Performance characteristics differ significantly
+
+## Troubleshooting
+
+### Port 3000 Already in Use
 
 ```bash
-# From project root
-node tests/puppeteer/puppeteer-test.js
+# Find and kill process using port 3000
+lsof -ti:3000 | xargs kill -9
+npm run dev
 ```
 
-Or use the test runner script:
+### Pi Not Reachable
 
 ```bash
-# From project root
-./tests/puppeteer/run-puppeteer-test.sh
+# Try static IP instead of mDNS
+ping 192.168.50.37
 ```
 
-### Manual Tests
-
-Manual test pages are available in the `/manual` directory and can be accessed through the browser:
-
-- `puppeteer-test.html` - Test page for layout and theme functionality
-- `test.html` - General test page for all components
-
-To use these pages, start the development server and navigate to:
-```
-http://localhost:3000/tests/manual/puppeteer-test.html
-http://localhost:3000/tests/manual/test.html
-```
-
-### Test Runner
-
-The `start-and-test.js` script starts the development server and provides testing options:
+### Photo Slideshow Not Working
 
 ```bash
-# From project root
-node tests/start-and-test.js
+# Check photo proxy service on Pi
+ssh pi@raspberrypizerow2.local "systemctl status kiosk-photos"
+
+# Check fallback file exists
+curl http://raspberrypizerow2.local/photos.json | jq '.photos | length'
 ```
 
-## Sandbox Issues with Puppeteer
+### Admin View Not Loading
 
-If you encounter sandbox errors on Ubuntu 23.10+, use one of these options:
+```bash
+# Check backend service
+ssh pi@raspberrypizerow2.local "systemctl status kiosk-photos"
 
-1. Use `--no-sandbox` flag in the Puppeteer launch options (already configured in our scripts)
-2. Set `CHROME_DEVEL_SANDBOX=/opt/google/chrome/chrome-sandbox` environment variable
-3. Run `echo kernel.apparmor_restrict_unprivileged_userns=0 | sudo tee /etc/sysctl.d/60-apparmor-namespace.conf` to disable restrictions globally
+# Check Nginx config
+ssh pi@raspberrypizerow2.local "sudo nginx -t"
+```
 
-## Screenshot Storage
+## Test Coverage
 
-Automated tests generate screenshots in the `/tests/screenshots` directory for visual verification. Each test step creates a separate screenshot.
+Current manual test coverage:
 
-## Test Documentation
+- ✅ All data sections display correctly
+- ✅ API integrations work (Met.no, Entur, Tibber, Google Calendar)
+- ✅ Photo slideshow with backend proxy
+- ✅ Admin interface (setup, login, settings)
+- ✅ Deployment pipeline (manual and auto-deploy)
+- ✅ TypeScript type safety
+- ✅ ESLint code quality
 
-- `TASK_1.3_TEST_PLAN.md` - Detailed test plan for Task 1.3 layout system
+## Documentation
+
+For more testing information, see:
+- [Deployment Guide](../docs/DEPLOYMENT_GUIDE.md)
+- [Architecture Documentation](../docs/architecture/)
+- [Admin View Plan](../docs/plans/admin-view.md)

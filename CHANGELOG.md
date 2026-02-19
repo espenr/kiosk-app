@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026-02-19] - Test Cleanup
+
+### Removed
+- **Obsolete test files** for old widget-based architecture:
+  - `public/puppeteer-test.html`, `public/test.html` (old widget test pages)
+  - `tests/puppeteer/` directory (5 Puppeteer test files for old widgets)
+  - `tests/start-and-test.js` (test runner referencing deleted files)
+  - `tests/state-management-test.html` (old state management tests)
+- **Total removed:** 8 test files (~40 KB)
+
+### Changed
+- Rewrote `tests/README.md` to reflect current testing approach
+- Documented manual testing procedures for fixed-layout architecture
+- Explained why automated browser tests were removed
+
 ## [2026-02-19] - Documentation Cleanup & Audit
 
 ### Removed
