@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026-02-19] - Data Persistence Fix
+
+### Fixed
+- **Data persistence across deployments**: Config data now stored in shared location `/var/www/kiosk-data/`
+- Auto-deploy and manual deploy both preserve data across version updates
+- Automatic migration of existing data directories to shared location
+
+### Changed
+- `server/data/` is now a symlink to `/var/www/kiosk-data/` in all releases
+- Updated `scripts/auto-update.sh` to set up data symlinks automatically
+- Updated `scripts/deploy.sh` to ensure data symlink exists
+
 ## [2026-02-19] - Archive Phase Test Scripts
 
 ### Changed
