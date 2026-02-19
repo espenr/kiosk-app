@@ -17,7 +17,7 @@ if [ -d "/var/www/kiosk" ]; then
   # Production (Pi)
   KIOSK_DIR="/var/www/kiosk"
   DATA_DIR="${KIOSK_DIR}/server/data"
-  SERVICE_NAME="kiosk-photo-server"
+  SERVICE_NAME="kiosk-photos"
 else
   # Development
   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
