@@ -1,21 +1,11 @@
 /**
- * Google Calendar API v3 service
- * https://developers.google.com/calendar/api/v3/reference
+ * Calendar service - Fetches calendar events from backend API
  *
- * Uses OAuth 2.0 with refresh token for authentication.
- * Supports multiple calendars (one per family member).
- *
- * Setup requires:
- * 1. Create OAuth credentials in Google Cloud Console (TV/Limited Input device type)
- * 2. Enable Google Calendar API
- * 3. Generate refresh token via device code flow (scripts/get-calendar-token.sh)
- * 4. Configure clientId, clientSecret, refreshToken, and calendars in app config
+ * The backend handles OAuth token refresh and Google Calendar API calls,
+ * keeping sensitive credentials server-side.
  */
 
-import { CalendarSource } from '../contexts/ConfigContext';
-
-const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
-const CALENDAR_API_BASE = 'https://www.googleapis.com/calendar/v3';
+const BACKEND_API = import.meta.env.DEV ? 'http://localhost:3001' : '';
 
 export interface CalendarEvent {
   id: string;
@@ -35,166 +25,51 @@ export interface CalendarData {
   fetchedAt: Date;
 }
 
-// Access token cache
-let cachedAccessToken: string | null = null;
-let tokenExpiresAt = 0;
-
-/**
- * Exchange refresh token for access token
- */
-async function getAccessToken(
-  clientId: string,
-  clientSecret: string,
-  refreshToken: string
-): Promise<string> {
-  // Return cached token if still valid (with 5 min buffer)
-  if (cachedAccessToken && Date.now() < tokenExpiresAt - 5 * 60 * 1000) {
-    return cachedAccessToken;
-  }
-
-  const response = await fetch(TOKEN_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-      grant_type: 'refresh_token',
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    console.error('Token refresh failed:', error);
-    throw new Error('Kunne ikke fornye kalender-tilgang');
-  }
-
-  const data = await response.json();
-  cachedAccessToken = data.access_token as string;
-  tokenExpiresAt = Date.now() + data.expires_in * 1000;
-
-  return cachedAccessToken as string;
-}
-
-interface GoogleCalendarEvent {
+interface BackendCalendarEvent {
   id: string;
-  summary?: string;
-  start: {
-    dateTime?: string;
-    date?: string;
-  };
-  end: {
-    dateTime?: string;
-    date?: string;
-  };
-  colorId?: string;
+  title: string;
+  start: string; // ISO date string
+  end: string;   // ISO date string
+  isAllDay: boolean;
+  calendarId: string;
+  calendarName: string;
+  calendarColor: string;
+  calendarIcon?: string;
 }
 
-interface GoogleCalendarResponse {
-  items?: GoogleCalendarEvent[];
-  error?: {
-    message: string;
-    code: number;
-  };
+interface BackendCalendarResponse {
+  events: BackendCalendarEvent[];
+  fetchedAt: string;
+  error?: string;
 }
 
 /**
- * Fetch events from a single calendar
+ * Fetch calendar events from backend API
+ * Backend handles OAuth token refresh and Google Calendar API calls
  */
-async function fetchSingleCalendarEvents(
-  accessToken: string,
-  calendarSource: CalendarSource,
-  timeMin: string,
-  timeMax: string
-): Promise<CalendarEvent[]> {
-  const params = new URLSearchParams({
-    timeMin,
-    timeMax,
-    singleEvents: 'true',
-    orderBy: 'startTime',
-    maxResults: '100',
-  });
-
-  const url = `${CALENDAR_API_BASE}/calendars/${encodeURIComponent(calendarSource.id)}/events?${params}`;
-
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
+export async function fetchCalendarEvents(): Promise<CalendarData> {
+  const response = await fetch(`${BACKEND_API}/api/calendar/events`);
 
   if (!response.ok) {
-    const error = await response.text();
-    console.error(`Calendar API error for ${calendarSource.name}:`, error);
-    // Return empty array instead of throwing - don't fail all calendars for one error
-    return [];
+    throw new Error('Kunne ikke hente kalenderdata');
   }
 
-  const data: GoogleCalendarResponse = await response.json();
+  const data: BackendCalendarResponse = await response.json();
 
   if (data.error) {
-    console.error(`Calendar error for ${calendarSource.name}:`, data.error.message);
-    return [];
+    throw new Error(data.error);
   }
 
-  return (data.items || []).map((item) => {
-    const isAllDay = !item.start.dateTime;
-    const start = isAllDay
-      ? parseAllDayDate(item.start.date!)
-      : new Date(item.start.dateTime!);
-    const end = isAllDay
-      ? parseAllDayDate(item.end.date!)
-      : new Date(item.end.dateTime!);
-
-    return {
-      id: `${calendarSource.id}-${item.id}`,
-      title: item.summary || '(Ingen tittel)',
-      start,
-      end,
-      isAllDay,
-      calendarId: calendarSource.id,
-      calendarName: calendarSource.name,
-      calendarColor: calendarSource.color,
-      calendarIcon: calendarSource.icon,
-    };
-  });
-}
-
-/**
- * Fetch calendar events from all configured calendars for the next 7 days
- */
-export async function fetchCalendarEvents(
-  clientId: string,
-  clientSecret: string,
-  refreshToken: string,
-  calendars: CalendarSource[]
-): Promise<CalendarData> {
-  const accessToken = await getAccessToken(clientId, clientSecret, refreshToken);
-
-  // Calculate time range: now to 7 days from now
-  const now = new Date();
-  const timeMin = now.toISOString();
-
-  const endDate = new Date(now);
-  endDate.setDate(endDate.getDate() + 7);
-  endDate.setHours(23, 59, 59, 999);
-  const timeMax = endDate.toISOString();
-
-  // Fetch all calendars in parallel
-  const eventArrays = await Promise.all(
-    calendars.map((cal) => fetchSingleCalendarEvents(accessToken, cal, timeMin, timeMax))
-  );
-
-  // Merge and sort all events by start time
-  const events = eventArrays
-    .flat()
-    .sort((a, b) => a.start.getTime() - b.start.getTime());
+  // Convert ISO date strings to Date objects
+  const events = data.events.map((event) => ({
+    ...event,
+    start: event.isAllDay ? parseAllDayDate(event.start) : new Date(event.start),
+    end: event.isAllDay ? parseAllDayDate(event.end) : new Date(event.end),
+  }));
 
   return {
     events,
-    fetchedAt: new Date(),
+    fetchedAt: new Date(data.fetchedAt),
   };
 }
 

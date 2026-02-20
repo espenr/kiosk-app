@@ -26,6 +26,7 @@ import {
   handleUpdateConfig,
   handleFactoryReset,
 } from './handlers/config.js';
+import { handleGetCalendarEvents } from './handlers/calendar.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = parseInt(process.env.PORT || '3001', 10);
@@ -223,6 +224,12 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
 
   if (url === '/api/config/factory-reset' && req.method === 'POST') {
     await handleFactoryReset(req, res);
+    return;
+  }
+
+  // Calendar routes
+  if (url === '/api/calendar/events' && req.method === 'GET') {
+    await handleGetCalendarEvents(req, res);
     return;
   }
 

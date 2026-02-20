@@ -19,16 +19,15 @@ let cachedEvents: CalendarEvent[] = [];
 let cacheTimestamp = 0;
 
 /**
- * Hook to fetch and manage calendar data from multiple family calendars
+ * Hook to fetch and manage calendar data from backend API
+ * Backend handles OAuth and Google Calendar API calls
  */
 export function useCalendar(): UseCalendarResult {
   const { config } = useConfig();
-  const { clientId, clientSecret, refreshToken, calendars } = config.calendar;
+  const { clientId } = config.calendar;
 
-  // Need OAuth credentials AND at least one calendar configured
-  const isConfigured = Boolean(
-    clientId && clientSecret && refreshToken && calendars && calendars.length > 0
-  );
+  // Calendar is configured if we have a client ID (backend handles the rest)
+  const isConfigured = Boolean(clientId);
 
   const [events, setEvents] = useState<CalendarEvent[]>(cachedEvents);
   const [isLoading, setIsLoading] = useState(!cachedEvents.length && isConfigured);
@@ -54,12 +53,7 @@ export function useCalendar(): UseCalendarResult {
       setError(null);
 
       try {
-        const data = await fetchCalendarEvents(
-          clientId!,
-          clientSecret!,
-          refreshToken!,
-          calendars!
-        );
+        const data = await fetchCalendarEvents();
         cachedEvents = data.events;
         cacheTimestamp = Date.now();
         setEvents(data.events);
@@ -75,7 +69,7 @@ export function useCalendar(): UseCalendarResult {
         setIsLoading(false);
       }
     },
-    [clientId, clientSecret, refreshToken, calendars, isConfigured]
+    [isConfigured]
   );
 
   // Initial fetch

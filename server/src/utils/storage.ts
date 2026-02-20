@@ -92,6 +92,39 @@ export function loadConfig(pin: string): KioskConfig | null {
 }
 
 /**
+ * Load config for internal server use (no PIN required)
+ * Loads from encrypted config using machine secret as PIN
+ * This allows trusted backend endpoints to access config without user auth
+ */
+export function loadConfigInternal(): KioskConfig {
+  ensureDataDir();
+
+  if (!existsSync(CONFIG_FILE)) {
+    throw new Error('Config file not found');
+  }
+
+  const authData = loadAuthData();
+  if (!authData || !authData.setupComplete) {
+    throw new Error('Setup not complete');
+  }
+
+  try {
+    const encryptedContent = readFileSync(CONFIG_FILE, 'utf-8');
+    // Use machine secret hex as PIN for internal access
+    // This is secure because machine secret is protected by file permissions
+    const machineSecret = readFileSync(join(DATA_DIR, 'machine.secret'));
+    const internalPin = machineSecret.toString('hex');
+    const decryptedContent = decrypt(encryptedContent, internalPin, authData.salt);
+    return JSON.parse(decryptedContent);
+  } catch (err) {
+    // If decryption fails, config was saved with user PIN, not machine secret
+    // Return default config structure with empty calendar
+    console.warn('Could not decrypt config with machine secret, calendar may not be available');
+    throw new Error('Config not accessible for internal use');
+  }
+}
+
+/**
  * Encrypt and save config to disk
  * File permissions: 0o600 (read/write owner only)
  */
