@@ -100,7 +100,7 @@ export function StopPlaceSearch({
   };
 
   return (
-    <div ref={wrapperRef} className="flex flex-col gap-2">
+    <div ref={wrapperRef} className="relative flex flex-col gap-2">
       <label className="text-sm font-medium text-gray-700">
         {label}
         {required && <span className="text-red-600 ml-1">*</span>}
@@ -117,7 +117,7 @@ export function StopPlaceSearch({
             }
           }}
           placeholder="Søk etter holdeplass..."
-          className={`w-full text-base px-4 py-2 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+          className={`w-full box-border text-base px-4 py-2 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             error ? 'border-red-500' : 'border-gray-300'
           }`}
         />
