@@ -53,9 +53,46 @@ flowchart TB
 
 | Component | File | Responsibility |
 |-----------|------|----------------|
-| PhotoSlideshow | `src/components/sections/PhotoSlideshow/` | UI rendering, Ken Burns effect, crossfade transitions |
+| PhotoSlideshow | `src/components/sections/PhotoSlideshow/` | UI rendering, Ken Burns effect, crossfade transitions, dual-layer blurred background |
 | usePhotos | `src/hooks/usePhotos.ts` | State management, auto-advance timer, preloading |
 | photos service | `src/services/photos.ts` | API calls, response parsing, fallback handling |
+
+### Visual Rendering
+
+The photo slideshow uses a dual-layer rendering approach to preserve full image aspect ratios while maintaining visual appeal:
+
+**Dual-Layer Architecture:**
+```
+┌─────────────────────────────────┐
+│  Background Layer (blur)        │ ← Same image, background-size: cover
+│  ┌───────────────────────────┐  │   filter: blur(12px)
+│  │ Foreground Layer (sharp)  │  │ ← Original image, background-size: contain
+│  │                           │  │   background-position: top center
+│  │                           │  │
+│  └───────────────────────────┘  │
+│                                 │
+└─────────────────────────────────┘
+```
+
+**Behavior by Aspect Ratio:**
+
+| Photo Type | Sharp Image Position | Blur Location | Result |
+|------------|---------------------|---------------|--------|
+| Portrait (tall) | Centered horizontally | Left & right sides | Full image visible, blur fills sides |
+| Landscape (wide) | Top-aligned | Bottom only | Full image visible, blur fills below |
+| Square | Centered | All sides | Full image visible, blur fills perimeter |
+
+**Key Benefits:**
+- **No cropping**: Every photo displays in full, preserving composition
+- **Visual continuity**: Blurred background fills empty space naturally
+- **Performance**: GPU-accelerated blur (12px) optimized for Raspberry Pi Zero W 2
+- **Animations intact**: Ken Burns and crossfade apply to both layers uniformly
+
+**Implementation:**
+- Background layer: `filter: blur(12px)` with `background-size: cover`
+- Foreground layer: `background-size: contain`, `background-position: top center`
+- CSS class: `.blur-photo-bg` in `src/index.css`
+- Rendering: `renderPhotoLayers()` helper function in `PhotoSlideshow.tsx`
 
 ### Backend Layer
 
