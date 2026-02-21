@@ -159,6 +159,12 @@ See [Photo Slideshow Architecture](/docs/architecture/photo-slideshow.md) for de
 - Group imports: external -> internal -> styles
 - Use Prettier for formatting (default config)
 
+## UI Debugging
+
+When encountering CSS layout issues, follow the systematic methodology documented in [`docs/development/ui-debugging-methodology.md`](./docs/development/ui-debugging-methodology.md).
+
+**Key principle:** Always measure first using browser DevTools before writing code. Never guess at CSS solutions.
+
 ## Pre-Commit Checklist
 **Always run before committing:**
 ```bash
