@@ -34,14 +34,22 @@ export function Header() {
   const displayDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
 
   return (
-    <div className="h-full flex items-center justify-between px-3">
-      {/* Clock and Date */}
-      <div className="flex flex-col">
-        <div className="flex items-baseline">
-          <span className="text-6xl font-bold tabular-nums leading-none">{formattedHoursMinutes}</span>
-          <span className="text-2xl font-bold tabular-nums text-gray-400 ml-1">:{formattedSeconds}</span>
-        </div>
-        <span className="text-lg text-gray-400">{displayDate}</span>
+    <div className="h-full flex items-center justify-between px-3 relative">
+      {/* Clock - Large but balanced */}
+      <div className="flex items-baseline">
+        <span className="text-7xl font-bold tabular-nums leading-none">{formattedHoursMinutes}</span>
+        <span className="text-2xl font-bold tabular-nums text-gray-400 ml-1">:{formattedSeconds}</span>
+      </div>
+
+      {/* Date - Positioned over photo section with shadow for readability */}
+      <div
+        className="absolute left-3 text-2xl font-bold text-white z-30"
+        style={{
+          top: 'calc(8vh + 0.5rem)',
+          textShadow: '3px 3px 6px rgba(0,0,0,0.9), -1px -1px 3px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.7)'
+        }}
+      >
+        {displayDate}
       </div>
 
       {/* Weather */}
