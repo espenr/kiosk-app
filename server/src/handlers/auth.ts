@@ -21,6 +21,7 @@ import {
   cacheConfigInSession,
 } from '../utils/sessions.js';
 import { parseJsonBody, sendJson, setCookie, clearCookie, parseCookies, getClientIp } from '../utils/http.js';
+import { saveInternalCalendarConfig } from './config.js';
 import type {
   AuthStatusResponse,
   LoginRequest,
@@ -147,6 +148,9 @@ export async function handleCompleteSetup(req: IncomingMessage, res: ServerRespo
 
     // Save encrypted config
     saveConfig(config, pin);
+
+    // Save internal calendar config for backend access
+    saveInternalCalendarConfig(config);
 
     // Create session
     const ipAddress = getClientIp(req);

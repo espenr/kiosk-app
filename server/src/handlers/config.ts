@@ -3,11 +3,48 @@
  */
 
 import { IncomingMessage, ServerResponse } from 'node:http';
+import { writeFileSync, existsSync, mkdirSync, chmodSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { loadAuthData, loadConfig, saveConfig, deleteConfigData, loadPublicConfig } from '../utils/storage.js';
 import { hashPin } from '../utils/crypto.js';
 import { getConfigFromSession, cacheConfigInSession } from '../utils/sessions.js';
 import { parseJsonBody, sendJson, requireAuth } from '../utils/http.js';
-import type { UpdateConfigRequest, FactoryResetRequest, PublicConfig } from '../types.js';
+import type { UpdateConfigRequest, FactoryResetRequest, PublicConfig, KioskConfig } from '../types.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const DATA_DIR = join(__dirname, '..', '..', 'data');
+const INTERNAL_CONFIG_FILE = join(DATA_DIR, 'config.internal.json');
+
+/**
+ * Save calendar configuration to internal file for backend access
+ * This allows the backend to read calendar credentials without requiring PIN
+ */
+export function saveInternalCalendarConfig(config: KioskConfig): void {
+  try {
+    // Ensure data directory exists
+    if (!existsSync(DATA_DIR)) {
+      mkdirSync(DATA_DIR, { recursive: true, mode: 0o700 });
+    }
+
+    const internalConfig = {
+      calendar: {
+        clientId: config.calendar.clientId,
+        clientSecret: config.calendar.clientSecret,
+        refreshToken: config.calendar.refreshToken,
+        calendars: config.calendar.calendars,
+      },
+    };
+
+    const content = JSON.stringify(internalConfig, null, 2);
+    writeFileSync(INTERNAL_CONFIG_FILE, content, { mode: 0o600 });
+    chmodSync(INTERNAL_CONFIG_FILE, 0o600); // Ensure permissions
+    console.log('Saved internal calendar config');
+  } catch (err) {
+    console.error('Failed to save internal calendar config:', err);
+    // Don't throw - this is not critical for main config save
+  }
+}
 
 /**
  * GET /api/config
@@ -106,6 +143,9 @@ export async function handleUpdateConfig(req: IncomingMessage, res: ServerRespon
 
     // Save encrypted config
     saveConfig(config, pin);
+
+    // Also save calendar config to internal file for backend access
+    saveInternalCalendarConfig(config);
 
     // Update session cache
     cacheConfigInSession(sessionId, config);

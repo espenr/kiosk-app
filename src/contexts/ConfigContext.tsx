@@ -1,6 +1,7 @@
 import { createContext, ReactNode, useContext, useState, useEffect } from 'react';
 import { STORAGE_KEYS, loadFromStorage, saveToStorage } from '../utils/storage';
 import { getConfig, getPublicConfig } from '../services/auth';
+import { invalidateCalendarCache } from '../hooks/useCalendar';
 
 // Kiosk configuration for API integrations and settings
 export interface KioskConfig {
@@ -221,6 +222,10 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     try {
       const serverConfig = await getConfig();
       console.log('[ConfigContext] Synced config from server');
+
+      // Invalidate calendar cache when config changes
+      invalidateCalendarCache();
+
       setConfig(serverConfig);
       setIsServerBacked(true);
     } catch (err) {

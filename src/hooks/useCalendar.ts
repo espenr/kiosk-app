@@ -19,6 +19,15 @@ let cachedEvents: CalendarEvent[] = [];
 let cacheTimestamp = 0;
 
 /**
+ * Invalidate calendar cache to force immediate refetch
+ * Call this when calendar configuration changes
+ */
+export function invalidateCalendarCache(): void {
+  cachedEvents = [];
+  cacheTimestamp = 0;
+}
+
+/**
  * Hook to fetch and manage calendar data from backend API
  * Backend handles OAuth and Google Calendar API calls
  */

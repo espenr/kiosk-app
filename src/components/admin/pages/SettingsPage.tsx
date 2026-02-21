@@ -6,6 +6,7 @@ import { useState, useEffect } from 'preact/hooks';
 import { route } from 'preact-router';
 import { getConfig, updateConfig, logout } from '../../../services/auth';
 import { useConfig } from '../../../contexts/ConfigContext';
+import { invalidateCalendarCache } from '../../../hooks/useCalendar';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import type { KioskConfig } from '../../../contexts/ConfigContext';
@@ -70,6 +71,9 @@ export function SettingsPage() {
 
       // Sync with ConfigContext
       await syncWithServer();
+
+      // Invalidate calendar cache to force immediate refetch
+      invalidateCalendarCache();
 
       setSuccess(true);
       setShowPinPrompt(false);
@@ -241,7 +245,9 @@ export function SettingsPage() {
         {/* Calendar Section */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">Google Calendar</h2>
-          <div className="space-y-4">
+
+          {/* OAuth Credentials */}
+          <div className="space-y-4 mb-6">
             <Input
               label="Client ID"
               type="text"
@@ -256,9 +262,17 @@ export function SettingsPage() {
               onChange={(v) => updateField('calendar', 'clientSecret', v || undefined)}
               placeholder="Optional - for calendar sync"
             />
+            <Input
+              label="Refresh Token"
+              type="password"
+              value={config.calendar.refreshToken || ''}
+              onChange={(v) => updateField('calendar', 'refreshToken', v || undefined)}
+              placeholder="Optional - from OAuth flow"
+            />
           </div>
-          <p className="text-sm text-gray-500 mt-2">
-            Configure OAuth credentials from{' '}
+
+          <p className="text-sm text-gray-500 mb-4">
+            Get OAuth credentials from{' '}
             <a
               href="https://console.cloud.google.com/apis/credentials"
               target="_blank"
@@ -267,10 +281,94 @@ export function SettingsPage() {
             >
               Google Cloud Console
             </a>
+            {' '}and run{' '}
+            <code className="bg-gray-100 px-1 rounded text-xs">scripts/get-calendar-token.sh</code>
+            {' '}to get refresh token.
           </p>
-          <p className="text-sm text-yellow-600 mt-2">
-            Note: Calendar sources must be configured separately after OAuth setup
-          </p>
+
+          {/* Calendar Sources */}
+          <div className="border-t pt-4 mt-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">Calendar Sources</h3>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  const calendars = config.calendar.calendars || [];
+                  updateField('calendar', 'calendars', [
+                    ...calendars,
+                    { id: '', name: '', color: '#4285f4' },
+                  ]);
+                }}
+              >
+                + Add Calendar
+              </Button>
+            </div>
+
+            {config.calendar.calendars && config.calendar.calendars.length > 0 ? (
+              <div className="space-y-4">
+                {config.calendar.calendars.map((cal, index) => (
+                  <div key={index} className="border rounded-lg p-4 bg-gray-50">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <Input
+                        label="Calendar ID"
+                        type="text"
+                        value={cal.id}
+                        onChange={(v) => {
+                          const calendars = [...(config.calendar.calendars || [])];
+                          calendars[index] = { ...calendars[index], id: v };
+                          updateField('calendar', 'calendars', calendars);
+                        }}
+                        placeholder="primary or email@gmail.com"
+                      />
+                      <Input
+                        label="Display Name"
+                        type="text"
+                        value={cal.name}
+                        onChange={(v) => {
+                          const calendars = [...(config.calendar.calendars || [])];
+                          calendars[index] = { ...calendars[index], name: v };
+                          updateField('calendar', 'calendars', calendars);
+                        }}
+                        placeholder="e.g., Espen, Emma"
+                      />
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Color
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="color"
+                            value={cal.color}
+                            onChange={(e) => {
+                              const calendars = [...(config.calendar.calendars || [])];
+                              calendars[index] = { ...calendars[index], color: e.currentTarget.value };
+                              updateField('calendar', 'calendars', calendars);
+                            }}
+                            className="h-10 w-20 border rounded cursor-pointer"
+                          />
+                          <Button
+                            variant="danger"
+                            onClick={() => {
+                              const calendars = [...(config.calendar.calendars || [])];
+                              calendars.splice(index, 1);
+                              updateField('calendar', 'calendars', calendars);
+                            }}
+                            className="flex-1"
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 italic">
+                No calendars configured. Add calendars to display family events.
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Save Button */}
