@@ -5,7 +5,12 @@ This file provides guidance to Claude Code when working with this repository.
 ## Commands
 
 ### Development
-- `npm run dev` - Start development server with hot-reload (port 3000)
+- `./scripts/start-dev.sh` - Start both frontend and backend servers (recommended)
+  - Frontend: Vite dev server on port 3000
+  - Backend: Node.js server on port 3001
+  - Use `./scripts/start-dev.sh status` to check running servers
+  - Use `./scripts/start-dev.sh stop` to stop all servers
+- `npm run dev` - Start frontend only (backend must be started separately)
 - `npm run build` - Build for production (TypeScript compilation + Vite build)
 - `npm run preview` - Preview production build locally
 - `npm run lint` - Run ESLint on TypeScript/TSX files
@@ -108,9 +113,20 @@ iCloud photo URLs expire after ~2 hours (401 Unauthorized). The backend proxy:
 
 ### Development
 ```bash
-# Start both frontend and backend
+# Recommended: Start both servers with single command
+./scripts/start-dev.sh
+
+# This starts:
+# - Frontend (Vite) on http://localhost:3000
+# - Backend (Node.js) on http://localhost:3001
+# - Vite proxies /api/* requests to backend automatically
+#
+# Backend logs: /tmp/kiosk-dev-backend.log
+# Press Ctrl+C to stop both servers
+
+# Alternative: Start manually (if needed)
 npm run dev                    # Frontend on :3000
-cd server && npm run dev       # Backend on :3001 (Vite proxies /api/* automatically)
+cd server && npm run dev       # Backend on :3001
 ```
 
 ### Setup on Pi
