@@ -1,15 +1,34 @@
+import { useState, useEffect } from 'react';
 import { useTransport } from '../../../hooks/useTransport';
-import { formatDepartureTime, formatTimeUntil } from '../../../services/entur';
+import { formatDepartureTime, formatTimeUntil, getStopPlaceName } from '../../../services/entur';
+import { useConfig } from '../../../contexts/ConfigContext';
 
 /**
  * Public transport departures from Entur API
  * Simple single-line display matching wireframe
  */
 export function Transport() {
+  const { config } = useConfig();
   const { departures, isLoading, error } = useTransport();
+  const [stopName, setStopName] = useState('');
 
-  // Stop name (could be derived from config in the future)
-  const stopName = 'Planetringen';
+  // Load stop name on mount
+  useEffect(() => {
+    const stopId = config.location.stopPlaceIds[0];
+
+    // Use cached name if available
+    if (config.location.stopPlaceName) {
+      setStopName(config.location.stopPlaceName);
+      return;
+    }
+
+    // Otherwise fetch from API
+    if (stopId) {
+      getStopPlaceName(stopId)
+        .then(setStopName)
+        .catch(() => setStopName('Ukjent holdeplass'));
+    }
+  }, [config.location.stopPlaceIds, config.location.stopPlaceName]);
 
   // Filter to departures in the future
   const now = new Date();

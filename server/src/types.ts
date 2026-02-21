@@ -67,6 +67,7 @@ export interface KioskConfig {
     latitude: number;
     longitude: number;
     stopPlaceIds: string[];
+    stopPlaceName?: string;
   };
   apiKeys: {
     tibber: string;
@@ -122,6 +123,7 @@ export interface PublicConfig {
     latitude: number;
     longitude: number;
     stopPlaceIds: string[];
+    stopPlaceName?: string;
   };
   photos: {
     interval: number;

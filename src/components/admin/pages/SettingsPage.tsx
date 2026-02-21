@@ -9,7 +9,9 @@ import { useConfig } from '../../../contexts/ConfigContext';
 import { invalidateCalendarCache } from '../../../hooks/useCalendar';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
+import { StopPlaceSearch } from '../components/StopPlaceSearch';
 import type { KioskConfig } from '../../../contexts/ConfigContext';
+import type { StopPlaceSuggestion } from '../../../services/entur';
 
 export function SettingsPage() {
   const { syncWithServer } = useConfig();
@@ -20,6 +22,7 @@ export function SettingsPage() {
   const [success, setSuccess] = useState(false);
   const [showPinPrompt, setShowPinPrompt] = useState(false);
   const [pin, setPin] = useState('');
+  const [selectedStop, setSelectedStop] = useState<StopPlaceSuggestion | null>(null);
 
   // Load config on mount
   useEffect(() => {
@@ -32,6 +35,21 @@ export function SettingsPage() {
       setError(null);
       const data = await getConfig();
       setConfig(data);
+
+      // Initialize selected stop from config
+      if (data.location.stopPlaceIds.length > 0 && data.location.stopPlaceName) {
+        setSelectedStop({
+          id: data.location.stopPlaceIds[0],
+          name: data.location.stopPlaceName,
+          label: data.location.stopPlaceName,
+          locality: '',
+          coordinates: {
+            latitude: data.location.latitude,
+            longitude: data.location.longitude,
+          },
+          categories: [],
+        });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load config');
     } finally {
@@ -165,25 +183,47 @@ export function SettingsPage() {
 
         {/* Location Section */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Location</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label="Latitude"
-              type="number"
-              value={config.location.latitude.toString()}
-              onChange={(v) => updateField('location', 'latitude', parseFloat(v))}
-              placeholder="63.4325"
-            />
-            <Input
-              label="Longitude"
-              type="number"
-              value={config.location.longitude.toString()}
-              onChange={(v) => updateField('location', 'longitude', parseFloat(v))}
-              placeholder="10.6379"
-            />
-          </div>
-          <p className="text-sm text-gray-500 mt-2">
-            Used for weather forecast and nearby transport stops
+          <h2 className="text-xl font-semibold mb-4">Location & Transport</h2>
+
+          <StopPlaceSearch
+            label="Bus/Tram Stop"
+            value={selectedStop}
+            onChange={(stop) => {
+              setSelectedStop(stop);
+              if (stop) {
+                updateField('location', 'stopPlaceIds', [stop.id]);
+                updateField('location', 'stopPlaceName', stop.name);
+                updateField('location', 'latitude', stop.coordinates.latitude);
+                updateField('location', 'longitude', stop.coordinates.longitude);
+              }
+            }}
+            focusPoint={
+              config.location.latitude && config.location.longitude
+                ? { latitude: config.location.latitude, longitude: config.location.longitude }
+                : undefined
+            }
+            required
+          />
+
+          {/* Show coordinates in read-only display */}
+          {selectedStop && (
+            <div className="mt-4 p-3 bg-gray-50 rounded border border-gray-200">
+              <p className="text-sm text-gray-600 mb-1">Coordinates (auto-populated):</p>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-500">Latitude:</span>
+                  <span className="ml-2 font-mono text-gray-700">{config.location.latitude.toFixed(4)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Longitude:</span>
+                  <span className="ml-2 font-mono text-gray-700">{config.location.longitude.toFixed(4)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <p className="text-sm text-gray-500 mt-4">
+            Used for weather forecast and transport departures
           </p>
         </div>
 

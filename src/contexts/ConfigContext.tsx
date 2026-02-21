@@ -9,6 +9,7 @@ export interface KioskConfig {
     latitude: number;
     longitude: number;
     stopPlaceIds: string[]; // Entur stop IDs (NSR:StopPlace:xxxxx)
+    stopPlaceName?: string; // Cached stop name for display
   };
   apiKeys: {
     tibber: string;
@@ -99,7 +100,7 @@ function removeUndefined<T extends object>(obj: T): Partial<T> {
 // Deep merge stored config with defaults to ensure all nested properties exist
 // Filters out undefined values so they don't overwrite defaults
 function mergeWithDefaults(stored: Partial<KioskConfig>): KioskConfig {
-  return {
+  const merged = {
     location: {
       ...defaultConfig.location,
       ...(stored.location ? removeUndefined(stored.location) : {}),
@@ -123,6 +124,14 @@ function mergeWithDefaults(stored: Partial<KioskConfig>): KioskConfig {
       calendars: stored.calendar?.calendars || defaultConfig.calendar.calendars,
     },
   };
+
+  // Migration: If old config has multiple stops, use first one
+  if (merged.location.stopPlaceIds.length > 1) {
+    console.log('[ConfigContext] Migrating to single stop from', merged.location.stopPlaceIds.length, 'stops');
+    merged.location.stopPlaceIds = [merged.location.stopPlaceIds[0]];
+  }
+
+  return merged;
 }
 
 export function ConfigProvider({ children }: { children: ReactNode }) {

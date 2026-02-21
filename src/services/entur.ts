@@ -7,6 +7,7 @@
  */
 
 const API_ENDPOINT = 'https://api.entur.io/journey-planner/v3/graphql';
+const GEOCODER_ENDPOINT = 'https://api.entur.io/geocoder/v2/autocomplete';
 const CLIENT_NAME = 'espen-kioskapp';
 
 export interface Departure {
@@ -17,6 +18,19 @@ export interface Departure {
   expectedTime: Date;
   isRealtime: boolean;
   quayName?: string;
+}
+
+export interface StopPlaceSuggestion {
+  id: string; // NSR:StopPlace:XXXXX
+  name: string; // "Planetringen"
+  label: string; // "Planetringen, Malvik"
+  locality: string; // "Malvik"
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+  distance?: number; // km from focus point
+  categories: string[];
 }
 
 interface EnturEstimatedCall {
@@ -171,4 +185,108 @@ export function formatDepartureTime(date: Date): string {
     minute: '2-digit',
     hour12: false,
   }).format(date);
+}
+
+interface GeocoderFeature {
+  properties: {
+    id: string;
+    name: string;
+    label: string;
+    locality?: string;
+    distance?: number;
+    category?: string[];
+  };
+  geometry: {
+    coordinates: [number, number];
+  };
+}
+
+interface GeocoderResponse {
+  features?: GeocoderFeature[];
+}
+
+/**
+ * Search for stop places by name using Entur Geocoder API
+ */
+export async function searchStopPlaces(
+  query: string,
+  focusPoint?: { latitude: number; longitude: number }
+): Promise<StopPlaceSuggestion[]> {
+  const url = new URL(GEOCODER_ENDPOINT);
+  url.searchParams.set('text', query);
+  url.searchParams.set('size', '20');
+  url.searchParams.set('lang', 'no');
+  url.searchParams.set('layers', 'venue');
+
+  if (focusPoint) {
+    url.searchParams.set('focus.point.lat', focusPoint.latitude.toString());
+    url.searchParams.set('focus.point.lon', focusPoint.longitude.toString());
+  }
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      'ET-Client-Name': CLIENT_NAME,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Geocoder API error: ${response.status} ${response.statusText}`);
+  }
+
+  const result: GeocoderResponse = await response.json();
+
+  if (!result.features || !Array.isArray(result.features)) {
+    return [];
+  }
+
+  return result.features.map((feature) => ({
+    id: feature.properties.id,
+    name: feature.properties.name,
+    label: feature.properties.label,
+    locality: feature.properties.locality || '',
+    coordinates: {
+      latitude: feature.geometry.coordinates[1],
+      longitude: feature.geometry.coordinates[0],
+    },
+    distance: feature.properties.distance,
+    categories: feature.properties.category || [],
+  }));
+}
+
+/**
+ * Get stop place name by ID
+ */
+export async function getStopPlaceName(stopPlaceId: string): Promise<string> {
+  const query = `
+    query GetStopPlace($id: String!) {
+      stopPlace(id: $id) {
+        id
+        name
+      }
+    }
+  `;
+
+  const response = await fetch(API_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'ET-Client-Name': CLIENT_NAME,
+    },
+    body: JSON.stringify({
+      query,
+      variables: { id: stopPlaceId },
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Entur API error: ${response.status} ${response.statusText}`);
+  }
+
+  const result = await response.json();
+
+  if (!result.data?.stopPlace?.name) {
+    throw new Error('Stop place not found');
+  }
+
+  return result.data.stopPlace.name;
 }

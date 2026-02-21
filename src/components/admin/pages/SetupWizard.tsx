@@ -9,6 +9,8 @@ import { completeSetup } from '../../../services/auth';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
+import { StopPlaceSearch } from '../components/StopPlaceSearch';
+import type { StopPlaceSuggestion } from '../../../services/entur';
 
 type Step = 'code' | 'pin' | 'config';
 
@@ -16,8 +18,6 @@ interface WizardState {
   code: string;
   pin: string;
   pinConfirm: string;
-  latitude: string;
-  longitude: string;
   gridFee: string;
 }
 
@@ -28,10 +28,9 @@ export function SetupWizard() {
     code: '',
     pin: '',
     pinConfirm: '',
-    latitude: '63.4325',
-    longitude: '10.6379',
     gridFee: '0.36',
   });
+  const [selectedStop, setSelectedStop] = useState<StopPlaceSuggestion | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -61,16 +60,10 @@ export function SetupWizard() {
   };
 
   const validateConfig = () => {
-    const lat = parseFloat(state.latitude);
-    const lon = parseFloat(state.longitude);
     const fee = parseFloat(state.gridFee);
 
-    if (isNaN(lat) || lat < -90 || lat > 90) {
-      setError('Invalid latitude (must be between -90 and 90)');
-      return false;
-    }
-    if (isNaN(lon) || lon < -180 || lon > 180) {
-      setError('Invalid longitude (must be between -180 and 180)');
+    if (!selectedStop) {
+      setError('Please select a bus/tram stop');
       return false;
     }
     if (isNaN(fee) || fee < 0) {
@@ -117,9 +110,10 @@ export function SetupWizard() {
         pin: state.pin,
         config: {
           location: {
-            latitude: parseFloat(state.latitude),
-            longitude: parseFloat(state.longitude),
-            stopPlaceIds: [],
+            latitude: selectedStop!.coordinates.latitude,
+            longitude: selectedStop!.coordinates.longitude,
+            stopPlaceIds: [selectedStop!.id],
+            stopPlaceName: selectedStop!.name,
           },
           apiKeys: {
             tibber: '',
@@ -265,28 +259,17 @@ export function SetupWizard() {
           {step === 'config' && (
             <div className="space-y-6">
               <p className="text-gray-600">
-                Enter your location and electricity grid fee. You can configure additional settings
-                (API keys, calendar, etc.) after setup is complete.
+                Select your bus/tram stop and enter your electricity grid fee. You can configure
+                additional settings (API keys, calendar, etc.) after setup is complete.
               </p>
 
-              <Input
-                label="Latitude"
-                type="number"
-                value={state.latitude}
-                onChange={(v) => updateState('latitude', v)}
-                placeholder="63.4325"
+              <StopPlaceSearch
+                label="Bus/Tram Stop"
+                value={selectedStop}
+                onChange={setSelectedStop}
+                focusPoint={{ latitude: 63.4325, longitude: 10.6379 }} // Default: Trondheim
                 required
-                error={error && error.includes('latitude') ? error : undefined}
-              />
-
-              <Input
-                label="Longitude"
-                type="number"
-                value={state.longitude}
-                onChange={(v) => updateState('longitude', v)}
-                placeholder="10.6379"
-                required
-                error={error && error.includes('longitude') ? error : undefined}
+                error={error && error.includes('stop') ? error : undefined}
               />
 
               <Input
@@ -300,11 +283,11 @@ export function SetupWizard() {
               />
 
               <p className="text-sm text-gray-500">
-                Default location is Trondheim (Planetringen). Default grid fee is 0.36 kr/kWh
-                (typical for Tensio/Trondheim).
+                Search for your nearest bus/tram stop. Default grid fee is 0.36 kr/kWh (typical
+                for Tensio/Trondheim).
               </p>
 
-              {error && !error.includes('latitude') && !error.includes('longitude') && !error.includes('grid fee') && (
+              {error && !error.includes('stop') && !error.includes('grid fee') && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
                   {error}
                 </div>
