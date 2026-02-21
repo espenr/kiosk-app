@@ -16,6 +16,14 @@ import { FactoryResetPage } from './pages/FactoryResetPage';
 export default function AdminRouter() {
   const { authStatus, loading } = useAuth();
 
+  // Enable scrolling on admin pages
+  useEffect(() => {
+    document.body.classList.add('admin-page');
+    return () => {
+      document.body.classList.remove('admin-page');
+    };
+  }, []);
+
   useEffect(() => {
     if (loading || !authStatus) return;
 
