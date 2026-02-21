@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useWeather } from '../../../hooks/useWeather';
-import { getWeatherEmoji } from '../../../services/weather';
+import { getWeatherEmoji, getWindArrow } from '../../../services/weather';
 
 /**
  * Header section with clock, date, and weather
@@ -52,6 +52,101 @@ export function Header() {
         {displayDate}
       </div>
 
+      {/* Hourly forecast - Positioned over photo section on the right side */}
+      <div
+        className="absolute right-3 z-30"
+        style={{
+          top: 'calc(8vh - 1.5rem)',
+        }}
+      >
+        <div className="flex gap-2">
+          {weather?.hourly.map((hour, index) => {
+            const timeStr = new Intl.DateTimeFormat('nb-NO', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false,
+            }).format(hour.time);
+
+            return (
+              <div key={index} className="text-center w-16">
+                <div
+                  className="text-gray-300 text-sm font-semibold"
+                  style={{
+                    textShadow: '3px 3px 6px rgba(0,0,0,0.9), -1px -1px 3px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.7)'
+                  }}
+                >
+                  {timeStr}
+                </div>
+                <div
+                  className="text-4xl"
+                  style={{
+                    textShadow: '3px 3px 6px rgba(0,0,0,0.9), -1px -1px 3px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.7)'
+                  }}
+                >
+                  {getWeatherEmoji(hour.symbol)}
+                </div>
+                <div
+                  className="text-white text-base font-semibold"
+                  style={{
+                    textShadow: '3px 3px 6px rgba(0,0,0,0.9), -1px -1px 3px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.7)'
+                  }}
+                >
+                  {hour.temperature}°
+                </div>
+                <div
+                  className="flex items-center justify-center gap-1 text-white text-sm font-semibold"
+                  style={{
+                    textShadow: '3px 3px 6px rgba(0,0,0,0.9), -1px -1px 3px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.7)'
+                  }}
+                >
+                  <span className="text-lg">{getWindArrow(hour.windDirection)}</span>
+                  <span>{hour.windSpeed.toFixed(1)}</span>
+                </div>
+              </div>
+            );
+          }) || (
+            // Placeholder when loading
+            ['--', '--', '--', '--'].map((_, index) => (
+              <div key={index} className="text-center w-16">
+                <div
+                  className="text-gray-300 text-sm font-semibold"
+                  style={{
+                    textShadow: '3px 3px 6px rgba(0,0,0,0.9), -1px -1px 3px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.7)'
+                  }}
+                >
+                  --:--
+                </div>
+                <div
+                  className="text-2xl"
+                  style={{
+                    textShadow: '3px 3px 6px rgba(0,0,0,0.9), -1px -1px 3px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.7)'
+                  }}
+                >
+                  --
+                </div>
+                <div
+                  className="text-white text-base font-semibold"
+                  style={{
+                    textShadow: '3px 3px 6px rgba(0,0,0,0.9), -1px -1px 3px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.7)'
+                  }}
+                >
+                  --°
+                </div>
+                <div
+                  className="flex items-center justify-center gap-1 text-white text-sm font-semibold"
+                  style={{
+                    textShadow: '3px 3px 6px rgba(0,0,0,0.9), -1px -1px 3px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.7)'
+                  }}
+                >
+                  <span className="text-lg">→</span>
+                  <span>--</span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
       {/* Weather */}
       <div className="flex items-center gap-4 ml-auto">
         {/* Current temperature */}
@@ -66,29 +161,6 @@ export function Header() {
               <span className="text-5xl font-semibold">{weather.current.temperature}°C</span>
             </>
           ) : null}
-        </div>
-
-        {/* 3-day forecast */}
-        <div className="flex gap-2">
-          {weather?.forecast.slice(0, 3).map((day, index) => (
-            <div key={index} className="text-center w-14">
-              <div className="text-gray-500 text-base">{day.dayName}</div>
-              <div className="text-2xl">{getWeatherEmoji(day.symbol)}</div>
-              <div className="text-gray-400 text-base">
-                <span>{day.high}°</span>
-                <span className="text-gray-600 ml-0.5">{day.low}°</span>
-              </div>
-            </div>
-          )) || (
-            // Placeholder when loading
-            ['Søn', 'Man', 'Tir'].map((day) => (
-              <div key={day} className="text-center w-14">
-                <div className="text-gray-600 text-base">{day}</div>
-                <div className="text-2xl text-gray-600">--</div>
-                <div className="text-gray-600 text-base">--°</div>
-              </div>
-            ))
-          )}
         </div>
       </div>
     </div>

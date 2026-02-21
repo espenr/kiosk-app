@@ -17,6 +17,7 @@ interface MetNoTimeseries {
       details: {
         air_temperature: number;
         wind_speed?: number;
+        wind_from_direction?: number;
         relative_humidity?: number;
       };
     };
@@ -66,9 +67,18 @@ export interface DayForecast {
   symbol: string;
 }
 
+export interface HourlyForecast {
+  time: Date;
+  temperature: number;
+  symbol: string;
+  windSpeed: number;
+  windDirection: number; // degrees, 0=north, 90=east, 180=south, 270=west
+}
+
 export interface WeatherData {
   current: CurrentWeather;
   forecast: DayForecast[];
+  hourly: HourlyForecast[];
 }
 
 /**
@@ -117,7 +127,10 @@ function parseWeatherData(data: MetNoResponse): WeatherData {
   // Get 5-day forecast (today + 4 days)
   const forecast = getFiveDayForecast(timeseries);
 
-  return { current, forecast };
+  // Get hourly forecast (next 10 hours, 2-hour intervals)
+  const hourly = getHourlyForecast(timeseries);
+
+  return { current, forecast, hourly };
 }
 
 /**
@@ -175,6 +188,74 @@ function getFiveDayForecast(timeseries: MetNoTimeseries[]): DayForecast[] {
   }
 
   return forecast;
+}
+
+/**
+ * Extract hourly forecast (next 8 hours, 2-hour intervals = 4 points)
+ */
+function getHourlyForecast(timeseries: MetNoTimeseries[]): HourlyForecast[] {
+  const hourly: HourlyForecast[] = [];
+  const now = new Date();
+
+  // We want 4 points: +2h, +4h, +6h, +8h
+  // Met.no provides hourly data, so we look for entries closest to these times
+  const targetHours = [2, 4, 6, 8];
+
+  for (const targetOffset of targetHours) {
+    const targetTime = new Date(now.getTime() + targetOffset * 60 * 60 * 1000);
+
+    // Find the closest timeseries entry
+    let closestEntry = timeseries[0];
+    let smallestDiff = Math.abs(new Date(timeseries[0].time).getTime() - targetTime.getTime());
+
+    for (const entry of timeseries) {
+      const entryTime = new Date(entry.time);
+      const diff = Math.abs(entryTime.getTime() - targetTime.getTime());
+
+      if (diff < smallestDiff) {
+        smallestDiff = diff;
+        closestEntry = entry;
+      }
+
+      // Stop if we've gone past the target time by more than 2 hours
+      if (entryTime.getTime() - targetTime.getTime() > 2 * 60 * 60 * 1000) {
+        break;
+      }
+    }
+
+    hourly.push({
+      time: new Date(closestEntry.time),
+      temperature: Math.round(closestEntry.data.instant.details.air_temperature),
+      symbol: closestEntry.data.next_1_hours?.summary.symbol_code ||
+              closestEntry.data.next_6_hours?.summary.symbol_code ||
+              'cloudy',
+      windSpeed: closestEntry.data.instant.details.wind_speed || 0,
+      windDirection: closestEntry.data.instant.details.wind_from_direction || 0,
+    });
+  }
+
+  return hourly;
+}
+
+/**
+ * Get wind direction arrow based on degrees
+ * Wind direction is "from" direction, so arrow points "to" direction
+ * @param degrees - 0=north, 90=east, 180=south, 270=west
+ */
+export function getWindArrow(degrees: number): string {
+  // Normalize to 0-360
+  const normalized = ((degrees % 360) + 360) % 360;
+
+  // 8 directions, each covering 45 degrees
+  // Arrow points TO where wind is blowing (opposite of FROM direction)
+  if (normalized >= 337.5 || normalized < 22.5) return '↓';   // FROM North
+  if (normalized >= 22.5 && normalized < 67.5) return '↙';    // FROM NE
+  if (normalized >= 67.5 && normalized < 112.5) return '←';   // FROM East
+  if (normalized >= 112.5 && normalized < 157.5) return '↖';  // FROM SE
+  if (normalized >= 157.5 && normalized < 202.5) return '↑';  // FROM South
+  if (normalized >= 202.5 && normalized < 247.5) return '↗';  // FROM SW
+  if (normalized >= 247.5 && normalized < 292.5) return '→';  // FROM West
+  return '↘'; // FROM NW
 }
 
 /**
