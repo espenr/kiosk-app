@@ -145,7 +145,12 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
   // Try to load from server on mount
   useEffect(() => {
     const loadFromServer = async () => {
-      const isAdminRoute = window.location.pathname.startsWith('/admin');
+      const currentPath = window.location.pathname;
+      const isAdminRoute = currentPath.startsWith('/admin');
+
+      // Routes that don't require authentication
+      const publicAdminRoutes = ['/admin/login', '/admin/setup', '/admin/recovery'];
+      const isPublicAdminRoute = publicAdminRoutes.some(route => currentPath.startsWith(route));
 
       // Only try authenticated config on admin routes
       if (isAdminRoute) {
@@ -156,8 +161,18 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
           setIsServerBacked(true);
           return; // Success, no need for fallback
         } catch {
-          // Auth failed on admin route, fall through to public config
-          console.log('[ConfigContext] Auth failed on admin route, falling back to public config');
+          // Auth failed on admin route
+          console.log('[ConfigContext] Auth failed on admin route');
+
+          // Redirect to login if on a protected admin route
+          if (!isPublicAdminRoute) {
+            console.log('[ConfigContext] Redirecting to login (session expired)');
+            window.location.href = '/admin/login';
+            return;
+          }
+
+          // Public admin routes (login, setup, recovery) can continue to load public config
+          console.log('[ConfigContext] On public admin route, falling back to public config');
         }
       }
 

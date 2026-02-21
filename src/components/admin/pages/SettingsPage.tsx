@@ -51,7 +51,16 @@ export function SettingsPage() {
         });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load config');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load config';
+
+      // If authentication failed, redirect to login
+      if (errorMessage.includes('401') || errorMessage.includes('Unauthorized') || errorMessage.includes('authenticated')) {
+        console.log('[SettingsPage] Session expired, redirecting to login');
+        route('/admin/login');
+        return;
+      }
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -106,7 +115,17 @@ export function SettingsPage() {
       // Clear success message after it's been visible for a while
       setTimeout(() => setSuccess(false), 5000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save config');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save config';
+
+      // If authentication failed, redirect to login
+      if (errorMessage.includes('401') || errorMessage.includes('Unauthorized') || errorMessage.includes('authenticated')) {
+        console.log('[SettingsPage] Session expired during save, redirecting to login');
+        setShowPinPrompt(false);
+        route('/admin/login');
+        return;
+      }
+
+      setError(errorMessage);
       setSuccess(false);
     } finally {
       setSaving(false);
