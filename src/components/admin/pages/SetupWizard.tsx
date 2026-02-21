@@ -189,7 +189,7 @@ export function SetupWizard() {
 
         {/* Card */}
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <h1 className="text-2xl font-bold mb-6">Setup Kiosk</h1>
+          <h1 className="text-3xl font-bold mb-6">Setup Kiosk</h1>
 
           {/* Step 1: Code */}
           {step === 'code' && (

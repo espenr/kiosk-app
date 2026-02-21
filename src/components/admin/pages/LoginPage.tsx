@@ -74,7 +74,9 @@ export function LoginPage() {
           />
 
           {remainingAttempts !== null && remainingAttempts > 0 && (
-            <p className="text-sm text-yellow-600">Remaining attempts: {remainingAttempts}</p>
+            <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded">
+              ⚠️ Remaining attempts: {remainingAttempts}
+            </div>
           )}
 
           <Button type="submit" disabled={loading} className="w-full">

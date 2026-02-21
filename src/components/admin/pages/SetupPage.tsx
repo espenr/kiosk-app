@@ -86,14 +86,14 @@ export function SetupPage() {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
         <div className="text-center">
-          <h1 className="text-4xl font-bold mb-8">Setup Code</h1>
+          <h1 className="text-3xl font-bold mb-8">Setup Code</h1>
           <div className="text-9xl font-mono font-bold tracking-widest mb-8">{code}</div>
           <p className="text-2xl mb-4">Enter this code on your phone or laptop</p>
           <p className="text-xl text-gray-400">
             {timeRemaining !== null ? `Expires in ${timeRemaining}s` : ''}
           </p>
           <div className="mt-8 flex flex-col gap-4 items-center">
-            <Button onClick={handleGoToWizard} className="bg-blue-600 hover:bg-blue-700">
+            <Button variant="primary" onClick={handleGoToWizard}>
               I Have This Code - Continue Setup
             </Button>
             {timeRemaining === 0 && (

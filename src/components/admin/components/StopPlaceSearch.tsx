@@ -103,7 +103,7 @@ export function StopPlaceSearch({
     <div ref={wrapperRef} className="flex flex-col gap-2">
       <label className="text-sm font-medium text-gray-700">
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span className="text-red-600 ml-1">*</span>}
       </label>
 
       <div className="relative">
@@ -117,7 +117,7 @@ export function StopPlaceSearch({
             }
           }}
           placeholder="Søk etter holdeplass..."
-          className={`px-4 py-2 pr-20 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+          className={`text-base px-4 py-2 pr-20 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             error ? 'border-red-500' : 'border-gray-300'
           }`}
         />
@@ -190,7 +190,7 @@ export function StopPlaceSearch({
 
       {/* Dropdown */}
       {isOpen && suggestions.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {suggestions.map((stop) => (
             <button
               key={stop.id}
@@ -219,7 +219,7 @@ export function StopPlaceSearch({
 
       {/* No results */}
       {isOpen && !isLoading && suggestions.length === 0 && query.length >= 2 && !value && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg p-3 text-sm text-gray-500">
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-3 text-sm text-gray-500">
           Ingen holdeplasser funnet
         </div>
       )}
