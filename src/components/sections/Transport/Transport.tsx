@@ -1,34 +1,12 @@
-import { useState, useEffect } from 'react';
 import { useTransport } from '../../../hooks/useTransport';
-import { formatDepartureTime, formatTimeUntil, getStopPlaceName } from '../../../services/entur';
-import { useConfig } from '../../../contexts/ConfigContext';
+import { formatDepartureTime, formatTimeUntil } from '../../../services/entur';
 
 /**
  * Public transport departures from Entur API
  * Simple single-line display matching wireframe
  */
 export function Transport() {
-  const { config } = useConfig();
   const { departures, isLoading, error } = useTransport();
-  const [stopName, setStopName] = useState('');
-
-  // Load stop name on mount
-  useEffect(() => {
-    const stopId = config.location.stopPlaceIds[0];
-
-    // Use cached name if available
-    if (config.location.stopPlaceName) {
-      setStopName(config.location.stopPlaceName);
-      return;
-    }
-
-    // Otherwise fetch from API
-    if (stopId) {
-      getStopPlaceName(stopId)
-        .then(setStopName)
-        .catch(() => setStopName('Ukjent holdeplass'));
-    }
-  }, [config.location.stopPlaceIds, config.location.stopPlaceName]);
 
   // Filter to departures in the future
   const now = new Date();
@@ -47,10 +25,7 @@ export function Transport() {
   if (isLoading && departures.length === 0) {
     return (
       <div className="h-full w-full px-6 flex items-center gap-4">
-        <div className="flex flex-col">
-          <span className="text-gray-500 text-sm">{stopName}</span>
-          <span className="text-2xl font-bold text-gray-600 tabular-nums">--:--</span>
-        </div>
+        <span className="text-2xl font-bold text-gray-600 tabular-nums">--:--</span>
       </div>
     );
   }
@@ -58,25 +33,29 @@ export function Transport() {
   if (!nextDeparture) {
     return (
       <div className="h-full w-full px-6 flex items-center gap-4">
-        <div className="flex flex-col">
-          <span className="text-gray-500 text-sm">{stopName}</span>
-          <span className="text-gray-500 text-lg">Ingen avganger</span>
-        </div>
+        <span className="text-gray-500 text-lg">Ingen avganger</span>
       </div>
     );
   }
 
   return (
     <div className="h-full w-full px-6 flex items-center gap-4">
-      <div className="flex flex-col">
-        <span className="text-gray-500 text-sm">{stopName}</span>
-        <span className="text-3xl font-bold tabular-nums">
-          {formatDepartureTime(nextDeparture.expectedTime)}
-        </span>
-      </div>
-      <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-lg font-semibold">
+      {/* Bus number (line) */}
+      <span className="bg-blue-600 text-white px-3 py-1 rounded text-2xl font-bold">
         {nextDeparture.line}
       </span>
+
+      {/* Bus name (destination) */}
+      <span className="text-2xl font-semibold text-white">
+        {nextDeparture.destination}
+      </span>
+
+      {/* Departure time */}
+      <span className="text-3xl font-bold tabular-nums text-white">
+        {formatDepartureTime(nextDeparture.expectedTime)}
+      </span>
+
+      {/* Time until and realtime indicator */}
       <span className="text-gray-400 text-base">
         ({formatTimeUntil(nextDeparture.expectedTime)})
       </span>
