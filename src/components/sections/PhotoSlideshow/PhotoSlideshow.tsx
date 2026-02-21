@@ -94,18 +94,44 @@ export function PhotoSlideshow() {
     } as React.CSSProperties;
   };
 
-  return (
-    <div className="relative h-full w-full bg-gray-900 overflow-hidden">
-      {/* Previous photo (fading out) */}
-      {displayedPhotos.previous && displayedPhotos.previous !== displayedPhotos.current && (
+  /**
+   * Renders a photo with blurred background and sharp foreground
+   * @param url - Photo URL
+   * @returns Two-layer structure (blur + sharp)
+   */
+  function renderPhotoLayers(url: string) {
+    return (
+      <>
+        {/* Blurred background layer - fills space with same image */}
         <div
-          className="absolute inset-0 animate-photo-fade-out"
+          className="absolute inset-0 blur-photo-bg"
           style={{
-            backgroundImage: `url(${displayedPhotos.previous})`,
+            backgroundImage: `url(${url})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}
         />
+        {/* Sharp foreground layer - preserves aspect ratio, top-aligned */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url(${url})`,
+            backgroundSize: 'contain',
+            backgroundPosition: 'top center',
+            backgroundRepeat: 'no-repeat',
+          }}
+        />
+      </>
+    );
+  }
+
+  return (
+    <div className="relative h-full w-full bg-gray-900 overflow-hidden">
+      {/* Previous photo (fading out) */}
+      {displayedPhotos.previous && displayedPhotos.previous !== displayedPhotos.current && (
+        <div className="absolute inset-0 animate-photo-fade-out">
+          {renderPhotoLayers(displayedPhotos.previous)}
+        </div>
       )}
 
       {/* Current photo (fading in with Ken Burns) */}
@@ -114,12 +140,11 @@ export function PhotoSlideshow() {
           key={displayedPhotos.current}
           className="absolute inset-0 animate-photo-fade-in animate-ken-burns"
           style={{
-            backgroundImage: `url(${displayedPhotos.current})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
             ...getKenBurnsStyle(kenBurnsDirection),
           }}
-        />
+        >
+          {renderPhotoLayers(displayedPhotos.current)}
+        </div>
       )}
 
       {/* Photo counter (subtle, bottom right) */}

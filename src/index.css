@@ -52,3 +52,8 @@ body.admin-page #root {
     background-color: #ffffff;
   }
 }
+
+/* Blur effect for photo background layer */
+.blur-photo-bg {
+  filter: blur(12px);
+}
