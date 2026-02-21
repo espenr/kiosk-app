@@ -75,14 +75,21 @@ export function SettingsPage() {
       // Invalidate calendar cache to force immediate refetch
       invalidateCalendarCache();
 
+      // Show success in modal briefly before closing
       setSuccess(true);
-      setShowPinPrompt(false);
-      setPin('');
+      setError(null);
 
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccess(false), 3000);
+      // Close modal after showing success message
+      setTimeout(() => {
+        setShowPinPrompt(false);
+        setPin('');
+      }, 1500);
+
+      // Clear success message after it's been visible for a while
+      setTimeout(() => setSuccess(false), 5000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save config');
+      setSuccess(false);
     } finally {
       setSaving(false);
     }
@@ -288,24 +295,10 @@ export function SettingsPage() {
 
           {/* Calendar Sources */}
           <div className="border-t pt-4 mt-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium">Calendar Sources</h3>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  const calendars = config.calendar.calendars || [];
-                  updateField('calendar', 'calendars', [
-                    ...calendars,
-                    { id: '', name: '', color: '#4285f4' },
-                  ]);
-                }}
-              >
-                + Add Calendar
-              </Button>
-            </div>
+            <h3 className="text-lg font-medium mb-4">Calendar Sources</h3>
 
             {config.calendar.calendars && config.calendar.calendars.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-4 mb-4">
                 {config.calendar.calendars.map((cal, index) => (
                   <div key={index} className="border rounded-lg p-4 bg-gray-50">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -364,10 +357,23 @@ export function SettingsPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-500 italic">
+              <p className="text-sm text-gray-500 italic mb-4">
                 No calendars configured. Add calendars to display family events.
               </p>
             )}
+
+            <Button
+              variant="secondary"
+              onClick={() => {
+                const calendars = config.calendar.calendars || [];
+                updateField('calendar', 'calendars', [
+                  ...calendars,
+                  { id: '', name: '', color: '#4285f4' },
+                ]);
+              }}
+            >
+              + Add Calendar
+            </Button>
           </div>
         </div>
 
@@ -398,7 +404,13 @@ export function SettingsPage() {
             <h2 className="text-xl font-bold mb-4">Confirm Changes</h2>
             <p className="text-gray-600 mb-4">Enter your PIN to save changes</p>
 
-            {error && (
+            {success && (
+              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-4">
+                ✓ Settings saved successfully
+              </div>
+            )}
+
+            {error && !success && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
                 {error}
               </div>
@@ -422,14 +434,15 @@ export function SettingsPage() {
                   setShowPinPrompt(false);
                   setPin('');
                   setError(null);
+                  setSuccess(false);
                 }}
                 disabled={saving}
                 className="flex-1"
               >
                 Cancel
               </Button>
-              <Button onClick={handleConfirmSave} disabled={saving} className="flex-1">
-                {saving ? 'Saving...' : 'Save'}
+              <Button onClick={handleConfirmSave} disabled={saving || success} className="flex-1">
+                {saving ? 'Saving...' : success ? 'Saved!' : 'Save'}
               </Button>
             </div>
           </div>
