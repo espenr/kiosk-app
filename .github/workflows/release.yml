@@ -32,6 +32,15 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Generate version
+        id: version
+        run: |
+          VERSION="v$(date +'%Y.%m.%d').$(git rev-list --count HEAD)"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+          # Create version file for frontend
+          echo "{\"version\":\"$VERSION\"}" > src/version.json
+
       - name: Build frontend
         run: npm run build
 
@@ -40,13 +49,6 @@ jobs:
           cd server
           npm ci
           npm run build
-
-      - name: Generate version
-        id: version
-        run: |
-          VERSION="v$(date +'%Y.%m.%d').$(git rev-list --count HEAD)"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Version: $VERSION"
 
       - name: Create release tarball
         run: |
