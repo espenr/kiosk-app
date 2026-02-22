@@ -12,6 +12,7 @@ import { Input } from '../components/Input';
 import { StopPlaceSearch } from '../components/StopPlaceSearch';
 import type { KioskConfig } from '../../../contexts/ConfigContext';
 import type { StopPlaceSuggestion } from '../../../services/entur';
+import packageJson from '../../../../package.json';
 
 export function SettingsPage() {
   const { syncWithServer } = useConfig();
@@ -172,7 +173,12 @@ export function SettingsPage() {
       {/* Header */}
       <div className="bg-white shadow">
         <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Kiosk Settings</h1>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Kiosk Settings</h1>
+            {!import.meta.env.DEV && !window.location.hostname.includes('localhost') && (
+              <p className="text-xs text-gray-500 mt-1">Version {packageJson.version}</p>
+            )}
+          </div>
           <div className="flex gap-3">
             <Button variant="secondary" onClick={() => route('/admin/reset')}>
               Factory Reset
