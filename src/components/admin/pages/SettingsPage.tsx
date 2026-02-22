@@ -272,15 +272,31 @@ export function SettingsPage() {
         {/* Electricity Section */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">Electricity</h2>
-          <Input
-            label="Grid Fee (kr/kWh)"
-            type="number"
-            value={config.electricity.gridFee.toString()}
-            onChange={(v) => updateField('electricity', 'gridFee', parseFloat(v))}
-            placeholder="0.36"
-          />
+          <div className="space-y-4">
+            <Input
+              label="Grid Fee - Day (06:00-22:00)"
+              type="number"
+              value={config.electricity.gridFee.day.toString()}
+              onChange={(v) => {
+                const gridFee = { ...config.electricity.gridFee, day: parseFloat(v) };
+                updateField('electricity', 'gridFee', gridFee);
+              }}
+              placeholder="0.3604"
+            />
+            <Input
+              label="Grid Fee - Night (22:00-06:00)"
+              type="number"
+              value={config.electricity.gridFee.night.toString()}
+              onChange={(v) => {
+                const gridFee = { ...config.electricity.gridFee, night: parseFloat(v) };
+                updateField('electricity', 'gridFee', gridFee);
+              }}
+              placeholder="0.2292"
+            />
+          </div>
           <p className="text-sm text-gray-500 mt-2">
-            Your grid fee (nettleie) is added to Tibber spot price. Typical values: 0.30-0.40 kr/kWh
+            Your grid fee (nettleie) is added to Tibber spot price. Rates vary by time of day.
+            Example: Tensio Malvik day: 0.3604 kr/kWh, night: 0.2292 kr/kWh
           </p>
         </div>
 

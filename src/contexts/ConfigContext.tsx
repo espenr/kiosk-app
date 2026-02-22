@@ -15,7 +15,10 @@ export interface KioskConfig {
     tibber: string;
   };
   electricity: {
-    gridFee: number; // Grid fee (nettleie) in kr/kWh - added to Tibber price
+    gridFee: {
+      day: number;   // Day rate (06:00-22:00) in kr/kWh
+      night: number; // Night rate (22:00-06:00) in kr/kWh
+    };
   };
   photos: {
     sharedAlbumUrl: string;
@@ -50,7 +53,10 @@ const defaultConfig: KioskConfig = {
     tibber: '',
   },
   electricity: {
-    gridFee: 0.36, // Default grid fee ~36 øre/kWh (typical for Tensio/Trondheim)
+    gridFee: {
+      day: 0.3604,   // Tensio Malvik day rate (06:00-22:00)
+      night: 0.2292, // Tensio Malvik night rate (22:00-06:00)
+    },
   },
   photos: {
     sharedAlbumUrl: '',
@@ -129,6 +135,17 @@ function mergeWithDefaults(stored: Partial<KioskConfig>): KioskConfig {
   if (merged.location.stopPlaceIds.length > 1) {
     console.log('[ConfigContext] Migrating to single stop from', merged.location.stopPlaceIds.length, 'stops');
     merged.location.stopPlaceIds = [merged.location.stopPlaceIds[0]];
+  }
+
+  // Migration: Convert old single gridFee to day/night structure
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const oldGridFee = (stored.electricity as any)?.gridFee;
+  if (typeof oldGridFee === 'number') {
+    console.log('[ConfigContext] Migrating single gridFee', oldGridFee, 'to day/night structure');
+    merged.electricity.gridFee = {
+      day: oldGridFee,
+      night: oldGridFee * 0.636, // Estimate night rate as ~63.6% of day rate (based on Tensio rates)
+    };
   }
 
   return merged;

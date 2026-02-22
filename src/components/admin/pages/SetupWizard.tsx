@@ -18,7 +18,8 @@ interface WizardState {
   code: string;
   pin: string;
   pinConfirm: string;
-  gridFee: string;
+  gridFeeDay: string;
+  gridFeeNight: string;
 }
 
 export function SetupWizard() {
@@ -28,7 +29,8 @@ export function SetupWizard() {
     code: '',
     pin: '',
     pinConfirm: '',
-    gridFee: '0.36',
+    gridFeeDay: '0.3604',   // Tensio Malvik day rate
+    gridFeeNight: '0.2292', // Tensio Malvik night rate
   });
   const [selectedStop, setSelectedStop] = useState<StopPlaceSuggestion | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -60,14 +62,19 @@ export function SetupWizard() {
   };
 
   const validateConfig = () => {
-    const fee = parseFloat(state.gridFee);
+    const dayFee = parseFloat(state.gridFeeDay);
+    const nightFee = parseFloat(state.gridFeeNight);
 
     if (!selectedStop) {
       setError('Please select a bus/tram stop');
       return false;
     }
-    if (isNaN(fee) || fee < 0) {
-      setError('Invalid grid fee (must be a positive number)');
+    if (isNaN(dayFee) || dayFee < 0) {
+      setError('Invalid day grid fee (must be a positive number)');
+      return false;
+    }
+    if (isNaN(nightFee) || nightFee < 0) {
+      setError('Invalid night grid fee (must be a positive number)');
       return false;
     }
     return true;
@@ -119,7 +126,10 @@ export function SetupWizard() {
             tibber: '',
           },
           electricity: {
-            gridFee: parseFloat(state.gridFee),
+            gridFee: {
+              day: parseFloat(state.gridFeeDay),
+              night: parseFloat(state.gridFeeNight),
+            },
           },
           photos: {
             sharedAlbumUrl: '',
@@ -273,18 +283,28 @@ export function SetupWizard() {
               />
 
               <Input
-                label="Grid Fee (kr/kWh)"
+                label="Grid Fee - Day (06:00-22:00)"
                 type="number"
-                value={state.gridFee}
-                onChange={(v) => updateState('gridFee', v)}
-                placeholder="0.36"
+                value={state.gridFeeDay}
+                onChange={(v) => updateState('gridFeeDay', v)}
+                placeholder="0.3604"
                 required
-                error={error && error.includes('grid fee') ? error : undefined}
+                error={error && error.includes('day grid fee') ? error : undefined}
+              />
+
+              <Input
+                label="Grid Fee - Night (22:00-06:00)"
+                type="number"
+                value={state.gridFeeNight}
+                onChange={(v) => updateState('gridFeeNight', v)}
+                placeholder="0.2292"
+                required
+                error={error && error.includes('night grid fee') ? error : undefined}
               />
 
               <p className="text-sm text-gray-500">
-                Search for your nearest bus/tram stop. Default grid fee is 0.36 kr/kWh (typical
-                for Tensio/Trondheim).
+                Search for your nearest bus/tram stop. Default grid fees are for Tensio Malvik:
+                day 0.3604 kr/kWh, night 0.2292 kr/kWh.
               </p>
 
               {error && !error.includes('stop') && !error.includes('grid fee') && (

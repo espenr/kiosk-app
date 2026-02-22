@@ -73,7 +73,10 @@ export interface KioskConfig {
     tibber: string;
   };
   electricity: {
-    gridFee: number;
+    gridFee: {
+      day: number;   // Day rate (06:00-22:00) in kr/kWh
+      night: number; // Night rate (22:00-06:00) in kr/kWh
+    };
   };
   photos: {
     sharedAlbumUrl: string;

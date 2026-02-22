@@ -205,6 +205,36 @@ export function formatPrice(price: number): string {
 }
 
 /**
+ * Grid fee rate configuration (day/night)
+ */
+export interface GridFeeRate {
+  day: number;   // Day rate (06:00-22:00) in kr/kWh
+  night: number; // Night rate (22:00-06:00) in kr/kWh
+}
+
+/**
+ * Check if a given time falls within day period (06:00-22:00)
+ */
+export function isDayPeriod(date: Date = new Date()): boolean {
+  const hour = date.getHours();
+  return hour >= 6 && hour < 22;
+}
+
+/**
+ * Get the applicable grid fee for a given time
+ */
+export function getGridFee(gridFeeRate: GridFeeRate, date: Date = new Date()): number {
+  return isDayPeriod(date) ? gridFeeRate.day : gridFeeRate.night;
+}
+
+/**
+ * Get grid fee period name for display
+ */
+export function getGridFeePeriod(date: Date = new Date()): 'day' | 'night' {
+  return isDayPeriod(date) ? 'day' : 'night';
+}
+
+/**
  * WebSocket subscription for live measurements from Tibber Pulse
  * Uses graphql-transport-ws protocol
  */

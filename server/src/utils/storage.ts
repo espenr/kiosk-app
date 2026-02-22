@@ -84,7 +84,22 @@ export function loadConfig(pin: string): KioskConfig | null {
   try {
     const encryptedContent = readFileSync(CONFIG_FILE, 'utf-8');
     const decryptedContent = decrypt(encryptedContent, pin, authData.salt);
-    return JSON.parse(decryptedContent);
+    const config = JSON.parse(decryptedContent) as KioskConfig;
+
+    // Migration: Convert old single gridFee to day/night structure
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (typeof (config.electricity as any).gridFee === 'number') {
+      const oldFee = (config.electricity as any).gridFee;
+      console.log('[Migration] Converting single gridFee', oldFee, 'to day/night structure');
+      config.electricity.gridFee = {
+        day: oldFee,
+        night: oldFee * 0.636, // Estimate night rate as ~63.6% of day rate
+      };
+      // Save migrated config
+      saveConfig(config, pin);
+    }
+
+    return config;
   } catch (err) {
     console.error('Failed to decrypt config:', err);
     throw new Error('Failed to decrypt config (wrong PIN?)');

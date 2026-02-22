@@ -1,7 +1,7 @@
 import { useElectricity } from '@/hooks/useElectricity';
 import { useLiveMeasurement } from '@/hooks/useLiveMeasurement';
 import { useConfig } from '@/contexts/ConfigContext';
-import { formatPrice, getPriceLevelBgClass, getPriceLevelColor } from '@/services/tibber';
+import { formatPrice, getPriceLevelBgClass, getPriceLevelColor, getGridFee, getGridFeePeriod } from '@/services/tibber';
 
 /**
  * Electricity prices from Tibber API
@@ -11,7 +11,7 @@ import { formatPrice, getPriceLevelBgClass, getPriceLevelColor } from '@/service
 export function Electricity() {
   const { electricity, isLoading, error } = useElectricity();
   const { config } = useConfig();
-  const gridFee = config.electricity.gridFee;
+  const gridFeeRate = config.electricity.gridFee;
 
   // Live consumption from Tibber Pulse
   const { measurement, isConnected } = useLiveMeasurement(
@@ -19,10 +19,10 @@ export function Electricity() {
     electricity?.realTimeEnabled ?? false
   );
 
-  // Get today's prices (midnight to midnight) with grid fee added
+  // Get today's prices (midnight to midnight) with time-based grid fee added
   const todayPrices = (electricity?.today ?? []).map(p => ({
     ...p,
-    total: p.total + gridFee,
+    total: p.total + getGridFee(gridFeeRate, p.startsAt),
   }));
 
   // Calculate min/max for dynamic bar heights
@@ -31,8 +31,10 @@ export function Electricity() {
   const maxPrice = prices.length > 0 ? Math.max(...prices) : 1;
   const priceRange = maxPrice - minPrice || 0.1;
 
-  // Find current hour
+  // Find current hour and grid fee period
   const currentHour = new Date().getHours();
+  const currentGridFee = getGridFee(gridFeeRate);
+  const currentPeriod = getGridFeePeriod();
 
   // Handle unconfigured state
   if (error === 'Tibber API-nøkkel ikke konfigurert') {
@@ -55,7 +57,9 @@ export function Electricity() {
     <div className="h-full w-full px-4 py-2 flex gap-4">
       {/* Current price - compact */}
       <div className="flex-shrink-0 flex flex-col justify-center border-r border-gray-700 pr-4">
-        <div className="text-xs text-gray-400">Strømpris</div>
+        <div className="text-xs text-gray-400">
+          Strømpris {currentPeriod === 'day' ? '☀️' : '🌙'}
+        </div>
         {isLoading && !electricity ? (
           <div className="text-2xl font-bold text-gray-500">--,--</div>
         ) : electricity?.current ? (
@@ -63,7 +67,7 @@ export function Electricity() {
             className="text-2xl font-bold"
             style={{ color: getPriceLevelColor(electricity.current.level) }}
           >
-            {formatPrice(electricity.current.total + gridFee).replace('.', ',')}
+            {formatPrice(electricity.current.total + currentGridFee).replace('.', ',')}
           </div>
         ) : (
           <div className="text-2xl font-bold text-gray-500">--,--</div>
