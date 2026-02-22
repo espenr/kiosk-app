@@ -157,12 +157,17 @@ export function SettingsPage() {
     );
   }
 
-  if (!config) {
+  if (!config || !config.electricity?.gridFee || typeof config.electricity.gridFee !== 'object') {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded">
-          <p className="font-medium">Failed to load configuration</p>
-          <p className="text-sm mt-2">{error}</p>
+          <p className="font-medium">Configuration needs migration</p>
+          <p className="text-sm mt-2">
+            Please log out and log back in to migrate your configuration to the new format.
+          </p>
+          <Button variant="secondary" onClick={handleLogout} className="mt-4">
+            Logout
+          </Button>
         </div>
       </div>
     );
