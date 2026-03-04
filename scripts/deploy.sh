@@ -8,8 +8,8 @@
 set -euo pipefail
 
 PI_USER="pi"
-PI_MDNS="raspberrypizerow2.local"
-PI_IP="192.168.50.37"
+PI_MDNS="pi"
+PI_IP="192.168.50.214"
 PI_DIR="/var/www/kiosk"
 LOCAL_DIST="dist/"
 LOCAL_SCRIPTS="scripts/"

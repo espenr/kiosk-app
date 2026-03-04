@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026-03-04] - Raspberry Pi 2 Model B Keyring Dialog Fix
+
+### Fixed
+- **Chromium keyring dialog blocking kiosk on boot**: Migrated from LXDE autostart to systemd user service with proper environment isolation
+- **Unreliable kiosk startup**: Systemd service now manages Chromium lifecycle with auto-restart on crash
+
+### Changed
+- Chromium launch method: LXDE autostart → systemd user service (`~/.config/systemd/user/kiosk.service`)
+- Enabled `loginctl enable-linger` for user services to start at boot
+- LXDE autostart cleaned up: removed Chromium and xrandr commands (now in systemd)
+- Disabled GNOME keyring daemon autostart via `~/.config/autostart/*.desktop` files
+- Deleted old keyring files to prevent password prompts
+
+### Added
+- `docs/pi2-keyring-fix.md` - Complete documentation of keyring fix implementation
+- `scripts/kiosk-service.sh` - Management script for systemd kiosk service (status, restart, logs, verify)
+
+### Technical Details
+- Systemd service includes 5-second delay for X server initialization
+- Environment variables set: DISPLAY, XAUTHORITY, DBUS_SESSION_BUS_ADDRESS
+- Service restarts automatically on crash with 3-second delay
+- Screen rotation (xrandr) runs before Chromium starts
+- Chromium flags: `--kiosk`, `--password-store=basic`, `--noerrdialogs`, `--disable-infobars`
+
 ## [2026-02-19] - Data Persistence Fix
 
 ### Fixed
