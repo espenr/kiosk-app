@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026-03-04] - Raspberry Pi 2 Screen Blanking Fix
+
+### Fixed
+- **Screen blanking and login screen after idle time**: LightDM was locking session after ~10 minutes, showing login greeter
+- **Automatic service startup**: Changed systemd target from `graphical.target` to `default.target` for user services
+
+### Changed
+- LightDM X server command: Added `-s 0 -dpms` flags to disable screen blanking and DPMS at X server level
+- LXDE autostart: Removed `@xscreensaver -no-splash` line to prevent screensaver from running
+- kiosk.service: Added `ExecStartPre=/usr/bin/xset s off -dpms` for additional screen blanking prevention
+- kiosk.service: Changed `WantedBy=graphical.target` to `WantedBy=default.target`
+
+### Added
+- `docs/pi2-screen-blanking-fix.md` - Documentation of screen blanking fix
+
+### Technical Details
+- Multi-layer protection: X server flags + xset command + no xscreensaver process
+- DPMS extension disabled at X server level (server reports "does not have the DPMS Extension")
+- Screen saver timeout set to 0 (disabled)
+- No scheduled tasks or scripts that turn off display at night
+
 ## [2026-03-04] - Raspberry Pi 2 Model B Keyring Dialog Fix
 
 ### Fixed
