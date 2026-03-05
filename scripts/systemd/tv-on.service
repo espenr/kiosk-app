@@ -1,0 +1,13 @@
+[Unit]
+Description=Turn TV On via HDMI CEC
+After=network.target
+
+[Service]
+Type=oneshot
+User=pi
+ExecStart=/var/www/kiosk/scripts/tv-control.sh on
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
