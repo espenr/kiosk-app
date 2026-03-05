@@ -263,6 +263,43 @@ journalctl -u kiosk-updater -f
 sudo bash /var/www/kiosk/scripts/setup-auto-deploy.sh
 ```
 
+## TV Power Control (HDMI CEC)
+
+Automated TV power management using HDMI CEC protocol to save electricity and extend screen life.
+
+### Schedule
+- **TV OFF:** 23:30 daily (night)
+- **TV ON:** 06:00 daily (morning)
+
+### Components
+- `scripts/tv-control.sh` - CEC control script (on/off/status commands)
+- `scripts/systemd/tv-off.service` - Systemd service to turn TV off
+- `scripts/systemd/tv-on.service` - Systemd service to turn TV on
+- `scripts/systemd/tv-off.timer` - Triggers at 23:30 daily
+- `scripts/systemd/tv-on.timer` - Triggers at 06:00 daily
+
+### Manual Control
+```bash
+# Turn TV on/off manually
+/var/www/kiosk/scripts/tv-control.sh on
+/var/www/kiosk/scripts/tv-control.sh off
+/var/www/kiosk/scripts/tv-control.sh status
+
+# Check timer status
+systemctl list-timers tv-*
+
+# View logs
+sudo tail -f /var/log/tv-control.log
+sudo journalctl -u tv-off.service
+sudo journalctl -u tv-on.service
+```
+
+### Notes
+- Uses `cec-utils` package (cec-client command)
+- CEC must be enabled in TV settings (may be called Anynet+, Bravia Sync, etc.)
+- Timers use `Persistent=true` to run missed executions on next boot
+- Kiosk service continues running when TV is off (Chromium stays active)
+
 ## Admin View (Complete)
 
 A secure admin interface for configuring the kiosk from a phone/laptop on the local network.
