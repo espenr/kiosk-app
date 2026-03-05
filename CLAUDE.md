@@ -296,9 +296,18 @@ sudo journalctl -u tv-on.service
 
 ### Notes
 - Uses `cec-utils` package (cec-client command)
-- CEC must be enabled in TV settings (may be called Anynet+, Bravia Sync, etc.)
+- CEC must be enabled in TV settings (Philips: EasyLink, Samsung: Anynet+, Sony: Bravia Sync, etc.)
 - Timers use `Persistent=true` to run missed executions on next boot
 - Kiosk service continues running when TV is off (Chromium stays active)
+
+### Troubleshooting
+**CEC not working after setup:**
+If CEC commands timeout or TV doesn't respond:
+1. Verify EasyLink is enabled in TV settings
+2. Unplug and replug HDMI cable (with both TV and Pi on)
+3. Check CEC device appears: `echo 'scan' | cec-client -s -d 1 | grep "device #0"`
+4. Check kernel messages: `dmesg | grep -i cec | tail -20`
+5. Reboot Pi if needed: `sudo reboot`
 
 ## Admin View (Complete)
 
