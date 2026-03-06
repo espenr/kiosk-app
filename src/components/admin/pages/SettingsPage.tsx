@@ -246,8 +246,8 @@ export function SettingsPage() {
         )}
 
         {/* Location Section */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-1">Location & Transport</h2>
+        <div className="bg-white rounded-lg shadow p-6 mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-1">Location & Transport</h2>
           <p className="text-sm text-gray-500 mb-4">Configure your location for weather and public transport data</p>
 
           <StopPlaceSearch
@@ -293,8 +293,8 @@ export function SettingsPage() {
         </div>
 
         {/* API Keys Section */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-1">API Keys</h2>
+        <div className="bg-white rounded-lg shadow p-6 mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-1">API Keys</h2>
           <p className="text-sm text-gray-500 mb-4">API credentials for external services</p>
           <Input
             label="Tibber API Token"
@@ -317,8 +317,8 @@ export function SettingsPage() {
         </div>
 
         {/* Electricity Section */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-1">Electricity Pricing</h2>
+        <div className="bg-white rounded-lg shadow p-6 mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-1">Electricity Pricing</h2>
           <p className="text-sm text-gray-500 mb-4">Configure grid fees for accurate electricity cost calculations</p>
           <div className="space-y-4">
             <Input
@@ -349,8 +349,8 @@ export function SettingsPage() {
         </div>
 
         {/* Photos Section */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-1">Photo Slideshow</h2>
+        <div className="bg-white rounded-lg shadow p-6 mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-1">Photo Slideshow</h2>
           <p className="text-sm text-gray-500 mb-4">Display photos from iCloud Shared Albums</p>
           <div className="space-y-4">
             <Input
@@ -374,8 +374,8 @@ export function SettingsPage() {
         </div>
 
         {/* Calendar Section */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-1">Google Calendar</h2>
+        <div className="bg-white rounded-lg shadow p-6 mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-1">Google Calendar</h2>
           <p className="text-sm text-gray-500 mb-4">Connect and display family calendar events</p>
 
           {/* Service Account Section */}
