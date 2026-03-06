@@ -421,6 +421,10 @@ export function SettingsPage() {
           {/* Calendar Sources */}
           <div className="border-t pt-4 mt-4">
             <h3 className="text-lg font-medium mb-4">Calendar Sources</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              After sharing calendars with your service account, configure which calendars to display.
+              Use "primary" for the main calendar or the full email address for shared calendars.
+            </p>
 
             {config.calendar.calendars && config.calendar.calendars.length > 0 ? (
               <div className="space-y-4 mb-4">
@@ -481,11 +485,7 @@ export function SettingsPage() {
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="text-sm text-gray-500 italic mb-4">
-                No calendars configured. Add calendars to display family events.
-              </p>
-            )}
+            ) : null}
 
             <Button
               variant="secondary"
@@ -493,7 +493,7 @@ export function SettingsPage() {
                 const calendars = config.calendar.calendars || [];
                 updateField('calendar', 'calendars', [
                   ...calendars,
-                  { id: '', name: '', color: '#4285f4' },
+                  { id: 'primary', name: '', color: '#4285f4' },
                 ]);
               }}
             >
