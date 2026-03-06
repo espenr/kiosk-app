@@ -14,12 +14,18 @@ const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.readonly';
 
 /**
  * Get redirect URI based on environment
+ * Can be overridden with OAUTH_REDIRECT_URI env variable
  */
 function getRedirectUri(): string {
+  // Allow override via environment variable
+  if (process.env.OAUTH_REDIRECT_URI) {
+    return process.env.OAUTH_REDIRECT_URI;
+  }
+
   const isDev = process.env.NODE_ENV === 'development';
   return isDev
     ? 'http://localhost:3000/admin/calendar/callback'
-    : 'http://pi.local/admin/calendar/callback';
+    : 'http://192.168.50.37/admin/calendar/callback'; // Use IP instead of pi.local
 }
 
 /**
