@@ -203,6 +203,47 @@ See full implementation plan: [`/docs/plans/kiosk-redesign.md`](./docs/plans/kio
 - Phase 6: Photo Slideshow (iCloud) - **COMPLETE**
 - Phase 7: Settings & Polish (Admin View) - **COMPLETE**
 
+## Google Calendar OAuth Integration
+
+Three methods to get a refresh token:
+
+**Method 1: Integrated OAuth Flow (Recommended)**
+Direct integration in the admin settings page:
+1. Navigate to `/admin/settings`
+2. Enter Google OAuth Client ID and Client Secret
+3. Click "Connect Google Calendar" button
+4. Authorize with Google account in popup
+5. Return to settings with auto-populated refresh token
+6. Click "Save Changes" and enter PIN to persist
+
+The OAuth flow uses CSRF-protected state parameters and temporary session storage. Refresh token is not persisted until the user explicitly saves with PIN verification.
+
+**Method 2: Web Flow Script**
+```bash
+node scripts/get-calendar-token-web.js
+```
+- Opens browser automatically
+- Handles OAuth callback seamlessly
+- Displays refresh token in terminal
+- No manual code entry needed
+
+**Method 3: Device Code Flow (Legacy)**
+```bash
+bash scripts/get-calendar-token.sh
+```
+- CLI-only flow with manual code entry
+- Works on headless servers
+- Less convenient
+
+See `scripts/README-calendar-oauth.md` for detailed setup instructions.
+
+**OAuth Architecture:**
+- Backend endpoints: `/api/oauth/google/init`, `/api/oauth/google/callback`
+- CSRF protection via cryptographic state parameter
+- Session-based authentication required
+- Redirect URIs: `http://localhost:3000/admin/calendar/callback` (dev), `http://pi.local/admin/calendar/callback` (prod)
+- Frontend callback page: `/admin/calendar/callback`
+
 ## Tibber Live Consumption
 
 The app supports real-time power consumption from Tibber Pulse via WebSocket subscription.

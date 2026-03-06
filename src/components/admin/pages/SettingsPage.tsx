@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'preact/hooks';
 import { route } from 'preact-router';
-import { getConfig, updateConfig, logout } from '../../../services/auth';
+import { getConfig, updateConfig, logout, initiateGoogleOAuth, getOAuthTokenFromSession } from '../../../services/auth';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { invalidateCalendarCache } from '../../../hooks/useCalendar';
 import { Button } from '../components/Button';
@@ -24,10 +24,38 @@ export function SettingsPage() {
   const [showPinPrompt, setShowPinPrompt] = useState(false);
   const [pin, setPin] = useState('');
   const [selectedStop, setSelectedStop] = useState<StopPlaceSuggestion | null>(null);
+  const [oauthInProgress, setOAuthInProgress] = useState(false);
+  const [oauthError, setOAuthError] = useState<string | null>(null);
+  const [oauthSuccess, setOAuthSuccess] = useState(false);
 
   // Load config on mount
   useEffect(() => {
     loadConfig();
+  }, []);
+
+  // Check for OAuth success on page load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('oauth_success') === 'true') {
+      setOAuthSuccess(true);
+      // Fetch token from session and populate refresh token field
+      getOAuthTokenFromSession().then(({ refreshToken }) => {
+        if (refreshToken) {
+          setConfig((prevConfig) => {
+            if (!prevConfig) return prevConfig;
+            return {
+              ...prevConfig,
+              calendar: {
+                ...prevConfig.calendar,
+                refreshToken,
+              },
+            };
+          });
+        }
+      }).catch(err => {
+        console.error('Failed to get OAuth token from session:', err);
+      });
+    }
   }, []);
 
   const loadConfig = async () => {
@@ -130,6 +158,29 @@ export function SettingsPage() {
       setSuccess(false);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleConnectGoogleCalendar = async () => {
+    try {
+      setOAuthInProgress(true);
+      setOAuthError(null);
+
+      if (!config?.calendar.clientId || !config?.calendar.clientSecret) {
+        setOAuthError('Please enter Client ID and Client Secret first');
+        setOAuthInProgress(false);
+        return;
+      }
+
+      const { authUrl } = await initiateGoogleOAuth(
+        config.calendar.clientId,
+        config.calendar.clientSecret
+      );
+
+      window.location.href = authUrl; // Redirect to Google
+    } catch (err) {
+      setOAuthError(err instanceof Error ? err.message : 'Failed to start OAuth');
+      setOAuthInProgress(false);
     }
   };
 
@@ -355,6 +406,47 @@ export function SettingsPage() {
               onChange={(v) => updateField('calendar', 'clientSecret', v || undefined)}
               placeholder="Optional - for calendar sync"
             />
+          </div>
+
+          {/* OAuth Connection */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h3 className="font-medium text-blue-900 mb-2">🔐 Connect with Google</h3>
+                <p className="text-sm text-blue-800 mb-3">
+                  Automatically authorize calendar access. Enter Client ID and Client Secret first.
+                </p>
+                {oauthError && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm mb-3">
+                    {oauthError}
+                  </div>
+                )}
+                {oauthSuccess && (
+                  <div className="bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded text-sm mb-3">
+                    ✓ Connected! Click "Save Changes" below to persist.
+                  </div>
+                )}
+              </div>
+              <Button
+                variant="primary"
+                onClick={handleConnectGoogleCalendar}
+                disabled={oauthInProgress || !config?.calendar.clientId || !config?.calendar.clientSecret}
+                className="ml-4"
+              >
+                {oauthInProgress ? 'Connecting...' : 'Connect Google Calendar'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="flex items-center gap-4 my-6">
+            <div className="flex-1 h-px bg-gray-300" />
+            <span className="text-sm text-gray-500 font-medium">OR</span>
+            <div className="flex-1 h-px bg-gray-300" />
+          </div>
+
+          {/* Manual Token Entry */}
+          <div className="space-y-4 mb-6">
             <Input
               label="Refresh Token"
               type="password"
@@ -364,20 +456,30 @@ export function SettingsPage() {
             />
           </div>
 
-          <p className="text-sm text-gray-500 mb-4">
-            Get OAuth credentials from{' '}
-            <a
-              href="https://console.cloud.google.com/apis/credentials"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline"
-            >
-              Google Cloud Console
-            </a>
-            {' '}and run{' '}
-            <code className="bg-gray-100 px-1 rounded text-xs">scripts/get-calendar-token.sh</code>
-            {' '}to get refresh token.
-          </p>
+          <div className="bg-blue-50 border border-blue-200 rounded p-4 mb-4">
+            <p className="text-sm font-medium text-blue-900 mb-2">📋 How to get your refresh token:</p>
+            <ol className="text-sm text-blue-800 space-y-2 ml-4 list-decimal">
+              <li>
+                Get OAuth credentials from{' '}
+                <a
+                  href="https://console.cloud.google.com/apis/credentials"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline font-medium"
+                >
+                  Google Cloud Console
+                </a>
+              </li>
+              <li>
+                On your laptop/desktop, run:{' '}
+                <code className="bg-blue-100 px-2 py-1 rounded text-xs font-mono">
+                  node scripts/get-calendar-token-web.js
+                </code>
+              </li>
+              <li>A browser will open automatically - authorize access</li>
+              <li>Copy the refresh token from terminal and paste it above</li>
+            </ol>
+          </div>
 
           {/* Calendar Sources */}
           <div className="border-t pt-4 mt-4">

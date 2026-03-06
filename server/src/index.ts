@@ -27,6 +27,11 @@ import {
   handleFactoryReset,
 } from './handlers/config.js';
 import { handleGetCalendarEvents } from './handlers/calendar.js';
+import {
+  handleInitOAuth,
+  handleOAuthCallback,
+  handleGetOAuthToken,
+} from './handlers/oauth.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = parseInt(process.env.PORT || '3001', 10);
@@ -203,6 +208,22 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
 
   if (url === '/api/auth/logout' && req.method === 'POST') {
     handleLogout(req, res);
+    return;
+  }
+
+  // OAuth routes
+  if (url === '/api/oauth/google/init' && req.method === 'POST') {
+    await handleInitOAuth(req, res);
+    return;
+  }
+
+  if (url.startsWith('/api/oauth/google/callback') && req.method === 'GET') {
+    await handleOAuthCallback(req, res);
+    return;
+  }
+
+  if (url === '/api/oauth/google/token' && req.method === 'GET') {
+    await handleGetOAuthToken(req, res);
     return;
   }
 
