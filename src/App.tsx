@@ -6,6 +6,7 @@ import { WeekCalendar } from './components/sections/Calendar/WeekCalendar';
 import { Electricity } from './components/sections/Electricity/Electricity';
 import { Transport } from './components/sections/Transport/Transport';
 import AdminRouter from './components/admin/AdminRouter';
+import { useVersionCheck } from './hooks/useVersionCheck';
 
 function Dashboard() {
   return (
@@ -25,6 +26,9 @@ function Dashboard() {
 }
 
 function App() {
+  // Check for version updates and reload when new version deployed
+  useVersionCheck();
+
   return (
     <Router>
       <Route path="/" component={Dashboard} />

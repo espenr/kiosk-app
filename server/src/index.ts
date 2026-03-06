@@ -163,6 +163,32 @@ function handleHealth(res: ServerResponse): void {
 }
 
 /**
+ * Handle GET /api/version
+ */
+function handleVersion(res: ServerResponse): void {
+  // Try to read VERSION file from deployment directory
+  const versionPaths = [
+    join(__dirname, '..', '..', 'VERSION'), // /var/www/kiosk/VERSION (production)
+    join(__dirname, '..', 'VERSION'), // server/VERSION (dev)
+    '/var/www/kiosk/VERSION', // Absolute path (production fallback)
+  ];
+
+  let version = 'dev';
+  for (const versionPath of versionPaths) {
+    if (existsSync(versionPath)) {
+      try {
+        version = readFileSync(versionPath, 'utf-8').trim();
+        break;
+      } catch {
+        // Continue to next path
+      }
+    }
+  }
+
+  sendJson(res, 200, { version });
+}
+
+/**
  * Request handler
  */
 async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -242,6 +268,11 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
 
     if (url === '/api/health' || url === '/health') {
       handleHealth(res);
+      return;
+    }
+
+    if (url === '/api/version') {
+      handleVersion(res);
       return;
     }
   }
