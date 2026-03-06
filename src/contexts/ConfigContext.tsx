@@ -25,9 +25,7 @@ export interface KioskConfig {
     interval: number; // seconds between slides
   };
   calendar: {
-    clientId?: string;
-    clientSecret?: string;
-    refreshToken?: string;
+    serviceAccountKey?: string; // base64-encoded JSON key (not exposed to frontend)
     calendars: CalendarSource[];
   };
 }
@@ -63,9 +61,7 @@ const defaultConfig: KioskConfig = {
     interval: 30,
   },
   calendar: {
-    clientId: undefined,
-    clientSecret: undefined,
-    refreshToken: undefined,
+    serviceAccountKey: undefined,
     calendars: [],
   },
 };

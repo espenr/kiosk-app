@@ -9,17 +9,16 @@ import { IncomingMessage, ServerResponse } from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import jwt from 'jsonwebtoken';
 import { sendJson } from '../utils/http.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CONFIG_FILE = join(__dirname, '..', '..', 'data', 'config.internal.json');
 
-const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 const CALENDAR_API_BASE = 'https://www.googleapis.com/calendar/v3';
 
-// Access token cache
-let cachedAccessToken: string | null = null;
-let tokenExpiresAt = 0;
+// JWT cache for service account
+let cachedJWT: { token: string; expiresAt: number } | null = null;
 
 interface CalendarEvent {
   id: string;
@@ -60,43 +59,57 @@ interface GoogleCalendarResponse {
   };
 }
 
+interface ServiceAccountKey {
+  private_key: string;
+  client_email: string;
+  token_uri?: string;
+}
+
 /**
- * Exchange refresh token for access token
+ * Generate JWT for Service Account authentication
+ * Valid for 1 hour, self-signed with private key
  */
-async function getAccessToken(
-  clientId: string,
-  clientSecret: string,
-  refreshToken: string
-): Promise<string> {
-  // Return cached token if still valid (with 5 min buffer)
-  if (cachedAccessToken && Date.now() < tokenExpiresAt - 5 * 60 * 1000) {
-    return cachedAccessToken;
+function generateServiceAccountJWT(serviceAccountKey: string): string {
+  // Decode base64 JSON key
+  const keyData: ServiceAccountKey = JSON.parse(
+    Buffer.from(serviceAccountKey, 'base64').toString('utf-8')
+  );
+
+  const now = Math.floor(Date.now() / 1000);
+
+  const payload = {
+    iss: keyData.client_email,
+    sub: keyData.client_email,
+    scope: 'https://www.googleapis.com/auth/calendar.readonly',
+    aud: 'https://oauth2.googleapis.com/token',
+    exp: now + 3600, // 1 hour
+    iat: now,
+  };
+
+  // Sign JWT with private key
+  return jwt.sign(payload, keyData.private_key, { algorithm: 'RS256' });
+}
+
+/**
+ * Get service account token (cached)
+ * Returns cached JWT if still valid (5-min buffer)
+ */
+function getServiceAccountToken(serviceAccountKey: string): string {
+  const now = Date.now();
+
+  // Return cached token if still valid (5-min buffer)
+  if (cachedJWT && cachedJWT.expiresAt > now + 5 * 60 * 1000) {
+    return cachedJWT.token;
   }
 
-  const response = await fetch(TOKEN_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-      grant_type: 'refresh_token',
-    }),
-  });
+  // Generate new token
+  const token = generateServiceAccountJWT(serviceAccountKey);
+  cachedJWT = {
+    token,
+    expiresAt: now + 3600 * 1000, // 1 hour
+  };
 
-  if (!response.ok) {
-    const error = await response.text();
-    console.error('Token refresh failed:', error);
-    throw new Error('Failed to refresh calendar access token');
-  }
-
-  const data = await response.json();
-  cachedAccessToken = data.access_token as string;
-  tokenExpiresAt = Date.now() + data.expires_in * 1000;
-
-  return cachedAccessToken as string;
+  return token;
 }
 
 /**
@@ -162,9 +175,7 @@ async function fetchSingleCalendarEvents(
 
 interface InternalConfig {
   calendar?: {
-    clientId?: string;
-    clientSecret?: string;
-    refreshToken?: string;
+    serviceAccountKey?: string;
     calendars?: Array<{
       id: string;
       name: string;
@@ -203,9 +214,9 @@ export async function handleGetCalendarEvents(
     const config = loadInternalConfig();
 
     // Check if calendar is configured
-    const { clientId, clientSecret, refreshToken, calendars } = config.calendar || {};
+    const { serviceAccountKey, calendars } = config.calendar || {};
 
-    if (!clientId || !clientSecret || !refreshToken || !calendars || calendars.length === 0) {
+    if (!serviceAccountKey || !calendars || calendars.length === 0) {
       sendJson(res, 200, {
         events: [],
         fetchedAt: new Date().toISOString(),
@@ -214,8 +225,8 @@ export async function handleGetCalendarEvents(
       return;
     }
 
-    // Get access token
-    const accessToken = await getAccessToken(clientId, clientSecret, refreshToken);
+    // Get service account token
+    const accessToken = getServiceAccountToken(serviceAccountKey);
 
     // Calculate time range: now to 7 days from now
     const now = new Date();

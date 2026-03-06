@@ -18,7 +18,6 @@ interface Session {
   createdAt: number;
   lastAccessedAt: number;
   config?: KioskConfig; // Cached decrypted config
-  oauthRefreshToken?: string; // Temporary OAuth token storage
 }
 
 interface LoginAttempt {
@@ -114,34 +113,6 @@ export function cacheConfigInSession(sessionId: string, config: KioskConfig): vo
 export function getConfigFromSession(sessionId: string): KioskConfig | null {
   const session = sessions.get(sessionId);
   return session?.config ?? null;
-}
-
-/**
- * Store OAuth refresh token in session (temporary until user saves)
- */
-export function storeOAuthTokenInSession(sessionId: string, refreshToken: string): void {
-  const session = sessions.get(sessionId);
-  if (session) {
-    session.oauthRefreshToken = refreshToken;
-  }
-}
-
-/**
- * Get OAuth refresh token from session
- */
-export function getOAuthTokenFromSession(sessionId: string): string | null {
-  const session = sessions.get(sessionId);
-  return session?.oauthRefreshToken ?? null;
-}
-
-/**
- * Clear OAuth refresh token from session
- */
-export function clearOAuthTokenFromSession(sessionId: string): void {
-  const session = sessions.get(sessionId);
-  if (session) {
-    session.oauthRefreshToken = undefined;
-  }
 }
 
 /**

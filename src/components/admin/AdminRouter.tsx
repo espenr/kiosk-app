@@ -12,7 +12,6 @@ import { LoginPage } from './pages/LoginPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { RecoveryPage } from './pages/RecoveryPage';
 import { FactoryResetPage } from './pages/FactoryResetPage';
-import { CalendarCallbackPage } from './pages/CalendarCallbackPage';
 
 export default function AdminRouter() {
   const { authStatus, loading } = useAuth();
@@ -58,7 +57,6 @@ export default function AdminRouter() {
         <Route path="/admin/settings" component={SettingsPage} />
         <Route path="/admin/recovery" component={RecoveryPage} />
         <Route path="/admin/reset" component={FactoryResetPage} />
-        <Route path="/admin/calendar/callback" component={CalendarCallbackPage} />
       </Router>
     </div>
   );

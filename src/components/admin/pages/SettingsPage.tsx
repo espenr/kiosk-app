@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'preact/hooks';
 import { route } from 'preact-router';
-import { getConfig, updateConfig, logout, initiateGoogleOAuth, getOAuthTokenFromSession } from '../../../services/auth';
+import { getConfig, updateConfig, logout } from '../../../services/auth';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { invalidateCalendarCache } from '../../../hooks/useCalendar';
 import { Button } from '../components/Button';
@@ -24,39 +24,13 @@ export function SettingsPage() {
   const [showPinPrompt, setShowPinPrompt] = useState(false);
   const [pin, setPin] = useState('');
   const [selectedStop, setSelectedStop] = useState<StopPlaceSuggestion | null>(null);
-  const [oauthInProgress, setOAuthInProgress] = useState(false);
-  const [oauthError, setOAuthError] = useState<string | null>(null);
-  const [oauthSuccess, setOAuthSuccess] = useState(false);
+  const [serviceAccountUploadError, setServiceAccountUploadError] = useState<string | null>(null);
 
   // Load config on mount
   useEffect(() => {
     loadConfig();
   }, []);
 
-  // Check for OAuth success on page load
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('oauth_success') === 'true') {
-      setOAuthSuccess(true);
-      // Fetch token from session and populate refresh token field
-      getOAuthTokenFromSession().then(({ refreshToken }) => {
-        if (refreshToken) {
-          setConfig((prevConfig) => {
-            if (!prevConfig) return prevConfig;
-            return {
-              ...prevConfig,
-              calendar: {
-                ...prevConfig.calendar,
-                refreshToken,
-              },
-            };
-          });
-        }
-      }).catch(err => {
-        console.error('Failed to get OAuth token from session:', err);
-      });
-    }
-  }, []);
 
   const loadConfig = async () => {
     try {
@@ -161,26 +135,28 @@ export function SettingsPage() {
     }
   };
 
-  const handleConnectGoogleCalendar = async () => {
-    try {
-      setOAuthInProgress(true);
-      setOAuthError(null);
+  const handleServiceAccountUpload = async (e: Event) => {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
 
-      if (!config?.calendar.clientId || !config?.calendar.clientSecret) {
-        setOAuthError('Please enter Client ID and Client Secret first');
-        setOAuthInProgress(false);
+    if (!file) return;
+
+    try {
+      setServiceAccountUploadError(null);
+      const text = await file.text();
+
+      // Validate it's valid JSON with required fields
+      const keyData = JSON.parse(text);
+      if (!keyData.private_key || !keyData.client_email) {
+        setServiceAccountUploadError('Invalid service account key: missing private_key or client_email');
         return;
       }
 
-      const { authUrl } = await initiateGoogleOAuth(
-        config.calendar.clientId,
-        config.calendar.clientSecret
-      );
-
-      window.location.href = authUrl; // Redirect to Google
+      // Convert to base64 for storage
+      const base64 = btoa(text);
+      updateField('calendar', 'serviceAccountKey', base64);
     } catch (err) {
-      setOAuthError(err instanceof Error ? err.message : 'Failed to start OAuth');
-      setOAuthInProgress(false);
+      setServiceAccountUploadError(err instanceof Error ? err.message : 'Invalid JSON file');
     }
   };
 
@@ -390,95 +366,56 @@ export function SettingsPage() {
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">Google Calendar</h2>
 
-          {/* OAuth Credentials */}
-          <div className="space-y-4 mb-6">
-            <Input
-              label="Client ID"
-              type="text"
-              value={config.calendar.clientId || ''}
-              onChange={(v) => updateField('calendar', 'clientId', v || undefined)}
-              placeholder="Optional - for calendar sync"
-            />
-            <Input
-              label="Client Secret"
-              type="password"
-              value={config.calendar.clientSecret || ''}
-              onChange={(v) => updateField('calendar', 'clientSecret', v || undefined)}
-              placeholder="Optional - for calendar sync"
-            />
-          </div>
-
-          {/* OAuth Connection */}
+          {/* Service Account Section */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <h3 className="font-medium text-blue-900 mb-2">🔐 Connect with Google</h3>
-                <p className="text-sm text-blue-800 mb-3">
-                  Automatically authorize calendar access. Enter Client ID and Client Secret first.
-                </p>
-                {oauthError && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm mb-3">
-                    {oauthError}
-                  </div>
-                )}
-                {oauthSuccess && (
-                  <div className="bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded text-sm mb-3">
-                    ✓ Connected! Click "Save Changes" below to persist.
-                  </div>
-                )}
-              </div>
-              <Button
-                variant="primary"
-                onClick={handleConnectGoogleCalendar}
-                disabled={oauthInProgress || !config?.calendar.clientId || !config?.calendar.clientSecret}
-                className="ml-4"
-              >
-                {oauthInProgress ? 'Connecting...' : 'Connect Google Calendar'}
-              </Button>
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div className="flex items-center gap-4 my-6">
-            <div className="flex-1 h-px bg-gray-300" />
-            <span className="text-sm text-gray-500 font-medium">OR</span>
-            <div className="flex-1 h-px bg-gray-300" />
-          </div>
-
-          {/* Manual Token Entry */}
-          <div className="space-y-4 mb-6">
-            <Input
-              label="Refresh Token"
-              type="password"
-              value={config.calendar.refreshToken || ''}
-              onChange={(v) => updateField('calendar', 'refreshToken', v || undefined)}
-              placeholder="Optional - from OAuth flow"
-            />
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded p-4 mb-4">
-            <p className="text-sm font-medium text-blue-900 mb-2">📋 How to get your refresh token:</p>
-            <ol className="text-sm text-blue-800 space-y-2 ml-4 list-decimal">
+            <h3 className="font-medium text-blue-900 mb-2">🔐 Service Account Setup</h3>
+            <ol className="text-sm text-blue-800 space-y-2 mb-4">
               <li>
-                Get OAuth credentials from{' '}
+                1. Create a Service Account in{' '}
                 <a
-                  href="https://console.cloud.google.com/apis/credentials"
+                  href="https://console.cloud.google.com/iam-admin/serviceaccounts"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline font-medium"
+                  className="underline"
                 >
                   Google Cloud Console
                 </a>
               </li>
-              <li>
-                On your laptop/desktop, run:{' '}
-                <code className="bg-blue-100 px-2 py-1 rounded text-xs font-mono">
-                  node scripts/get-calendar-token-web.js
-                </code>
-              </li>
-              <li>A browser will open automatically - authorize access</li>
-              <li>Copy the refresh token from terminal and paste it above</li>
+              <li>2. Download the JSON key file</li>
+              <li>3. Share your calendar with the service account email (view-only)</li>
+              <li>4. Upload the JSON key below</li>
             </ol>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Service Account JSON Key
+                </label>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleServiceAccountUpload}
+                  className="block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-blue-50 file:text-blue-700
+                    hover:file:bg-blue-100"
+                />
+              </div>
+
+              {serviceAccountUploadError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm">
+                  {serviceAccountUploadError}
+                </div>
+              )}
+
+              {config?.calendar.serviceAccountKey && (
+                <div className="text-sm text-green-700">
+                  ✓ Service Account configured
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Calendar Sources */}

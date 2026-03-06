@@ -83,9 +83,7 @@ export interface KioskConfig {
     interval: number;
   };
   calendar: {
-    clientId?: string;
-    clientSecret?: string;
-    refreshToken?: string;
+    serviceAccountKey?: string; // base64-encoded JSON key file
     calendars: CalendarSource[];
   };
 }
@@ -132,6 +130,6 @@ export interface PublicConfig {
     interval: number;
   };
   calendar: {
-    clientId?: string; // OAuth Client ID is public (not sensitive)
+    // Service account has no public fields (key is sensitive)
   };
 }

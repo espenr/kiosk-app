@@ -124,22 +124,3 @@ export async function factoryReset(pin: string): Promise<{ success: boolean }> {
   });
 }
 
-/**
- * Initiate Google OAuth flow
- */
-export async function initiateGoogleOAuth(
-  clientId: string,
-  clientSecret: string
-): Promise<{ authUrl: string }> {
-  return apiFetch<{ authUrl: string }>('/oauth/google/init', {
-    method: 'POST',
-    body: JSON.stringify({ clientId, clientSecret }),
-  });
-}
-
-/**
- * Get OAuth refresh token from session
- */
-export async function getOAuthTokenFromSession(): Promise<{ refreshToken: string | null }> {
-  return apiFetch<{ refreshToken: string | null }>('/oauth/google/token');
-}

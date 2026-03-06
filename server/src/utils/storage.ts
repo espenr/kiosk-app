@@ -174,7 +174,7 @@ export function savePublicConfig(config: KioskConfig): void {
       interval: config.photos.interval,
     },
     calendar: {
-      clientId: config.calendar.clientId, // OAuth Client ID is public
+      // Service account has no public fields (key is sensitive)
     },
   };
 

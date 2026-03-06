@@ -1,6 +1,10 @@
 #!/bin/bash
 # Script to generate a refresh token for Google Calendar API using device code flow
 # This is the appropriate flow for TV/kiosk devices
+#
+# NOTE: Consider using get-calendar-token-web.js instead - it's much easier!
+# This script uses device code flow which requires manually entering a code.
+# The web flow (get-calendar-token-web.js) automatically handles the OAuth redirect.
 
 # Get credentials from environment or prompt
 if [ -z "$GOOGLE_CLIENT_ID" ]; then

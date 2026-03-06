@@ -29,9 +29,7 @@ export function saveInternalCalendarConfig(config: KioskConfig): void {
 
     const internalConfig = {
       calendar: {
-        clientId: config.calendar.clientId,
-        clientSecret: config.calendar.clientSecret,
-        refreshToken: config.calendar.refreshToken,
+        serviceAccountKey: config.calendar.serviceAccountKey,
         calendars: config.calendar.calendars,
       },
     };
