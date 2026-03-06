@@ -238,7 +238,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const pollInterval = 60000; // 1 minute
+    const pollInterval = 10000; // 10 seconds
 
     const pollForUpdates = async () => {
       try {
@@ -246,12 +246,15 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
         const serverTimestamp = (publicConfig as Partial<KioskConfig>).lastModified || 0;
         const currentTimestamp = config.lastModified || 0;
 
+        console.log('[ConfigContext] Polling for updates', {
+          current: currentTimestamp,
+          server: serverTimestamp,
+          needsUpdate: serverTimestamp > currentTimestamp,
+        });
+
         // If server config is newer, update
         if (serverTimestamp > currentTimestamp) {
-          console.log('[ConfigContext] Config updated on server, reloading', {
-            old: currentTimestamp,
-            new: serverTimestamp,
-          });
+          console.log('[ConfigContext] Config updated on server, reloading');
           const stored = loadFromStorage<Partial<KioskConfig>>(STORAGE_KEYS.CONFIG, {});
           const merged = mergeWithDefaults({ ...stored, ...publicConfig });
           setConfig(merged);
