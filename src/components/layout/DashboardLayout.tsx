@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { ConnectivityWarning } from '@/components/sections/ConnectivityWarning';
 
 interface DashboardLayoutProps {
   header: ReactNode;
@@ -31,6 +32,9 @@ export function DashboardLayout({
       <header className="h-[8%] flex-shrink-0 border-b border-gray-800">
         {header}
       </header>
+
+      {/* Connectivity Warning - Only shown when offline */}
+      <ConnectivityWarning />
 
       {/* Photo + Calendar overlay - 74% */}
       <section className="h-[74%] flex-shrink-0 relative">
