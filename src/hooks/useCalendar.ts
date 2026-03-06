@@ -33,10 +33,12 @@ export function invalidateCalendarCache(): void {
  */
 export function useCalendar(): UseCalendarResult {
   const { config } = useConfig();
-  const { serviceAccountKey } = config.calendar;
+  const { serviceAccountKey, configured } = config.calendar;
 
-  // Calendar is configured if we have a service account key (backend handles the rest)
-  const isConfigured = Boolean(serviceAccountKey);
+  // Calendar is configured if:
+  // - We have serviceAccountKey (admin view with authenticated config)
+  // - OR configured flag is true (dashboard view with public config)
+  const isConfigured = Boolean(serviceAccountKey || configured);
 
   const [events, setEvents] = useState<CalendarEvent[]>(cachedEvents);
   const [isLoading, setIsLoading] = useState(!cachedEvents.length && isConfigured);

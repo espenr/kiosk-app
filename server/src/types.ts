@@ -140,6 +140,7 @@ export interface PublicConfig {
     interval: number;
   };
   calendar: {
-    // Service account has no public fields (key is sensitive)
+    calendars: CalendarSource[]; // Calendar list is not sensitive (IDs are shareable)
+    configured: boolean; // Whether service account is configured
   };
 }

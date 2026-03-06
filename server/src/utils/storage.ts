@@ -187,7 +187,8 @@ export function savePublicConfig(config: KioskConfig): void {
       interval: config.photos.interval,
     },
     calendar: {
-      // Service account has no public fields (key is sensitive)
+      calendars: config.calendar.calendars,
+      configured: Boolean(config.calendar.serviceAccountKey),
     },
   };
 

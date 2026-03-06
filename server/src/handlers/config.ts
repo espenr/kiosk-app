@@ -83,7 +83,7 @@ export function handleGetPublicConfig(req: IncomingMessage, res: ServerResponse)
         apiKeys: { tibber: '' },
         electricity: { gridFee: { day: 0.3604, night: 0.2292 } },
         photos: { interval: 30 },
-        calendar: {},
+        calendar: { calendars: [], configured: false },
       };
       sendJson(res, 200, defaultConfig, { allowOrigin: req.headers.origin });
       return;
@@ -98,7 +98,7 @@ export function handleGetPublicConfig(req: IncomingMessage, res: ServerResponse)
         apiKeys: { tibber: '' },
         electricity: { gridFee: { day: 0.3604, night: 0.2292 } },
         photos: { interval: 30 },
-        calendar: {},
+        calendar: { calendars: [], configured: false },
       };
       sendJson(res, 200, defaultConfig, { allowOrigin: req.headers.origin });
       return;

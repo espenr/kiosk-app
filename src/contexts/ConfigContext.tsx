@@ -25,8 +25,9 @@ export interface KioskConfig {
     interval: number; // seconds between slides
   };
   calendar: {
-    serviceAccountKey?: string; // base64-encoded JSON key (not exposed to frontend)
+    serviceAccountKey?: string; // base64-encoded JSON key (only in authenticated config)
     calendars: CalendarSource[];
+    configured?: boolean; // Whether service account is configured (from public config)
   };
   lastModified?: number; // Unix timestamp (ms) for conflict detection
 }
@@ -64,6 +65,7 @@ const defaultConfig: KioskConfig = {
   calendar: {
     serviceAccountKey: undefined,
     calendars: [],
+    configured: false,
   },
 };
 
