@@ -226,6 +226,46 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     loadFromServer();
   }, []);
 
+  // Poll for config updates on dashboard (not on admin routes)
+  useEffect(() => {
+    const currentPath = window.location.pathname;
+    const isAdminRoute = currentPath.startsWith('/admin');
+
+    // Only poll on dashboard, not in admin
+    if (isAdminRoute || !isServerBacked) {
+      return;
+    }
+
+    const pollInterval = 60000; // 1 minute
+
+    const pollForUpdates = async () => {
+      try {
+        const publicConfig = await getPublicConfig();
+        const serverTimestamp = (publicConfig as Partial<KioskConfig>).lastModified || 0;
+        const currentTimestamp = config.lastModified || 0;
+
+        // If server config is newer, update
+        if (serverTimestamp > currentTimestamp) {
+          console.log('[ConfigContext] Config updated on server, reloading', {
+            old: currentTimestamp,
+            new: serverTimestamp,
+          });
+          const stored = loadFromStorage<Partial<KioskConfig>>(STORAGE_KEYS.CONFIG, {});
+          const merged = mergeWithDefaults({ ...stored, ...publicConfig });
+          setConfig(merged);
+
+          // Invalidate calendar cache to force re-fetch with new credentials
+          invalidateCalendarCache();
+        }
+      } catch (err) {
+        console.error('[ConfigContext] Poll failed:', err);
+      }
+    };
+
+    const intervalId = setInterval(pollForUpdates, pollInterval);
+    return () => clearInterval(intervalId);
+  }, [config.lastModified, isServerBacked]);
+
   // Save to localStorage when config changes (fallback only)
   useEffect(() => {
     if (!isServerBacked) {

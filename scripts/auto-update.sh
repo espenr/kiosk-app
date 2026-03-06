@@ -116,11 +116,11 @@ restart_services() {
         log "Restarted kiosk-photos service"
     fi
 
-    # Refresh kiosk browser (send F5 to Chromium)
+    # Hard refresh kiosk browser (send Ctrl+F5 to clear cache)
     if command -v xdotool &> /dev/null; then
         export DISPLAY=:0
-        xdotool key F5 2>/dev/null || true
-        log "Sent refresh to browser"
+        xdotool key --clearmodifiers ctrl+F5 2>/dev/null || true
+        log "Sent hard refresh to browser"
     fi
 }
 
