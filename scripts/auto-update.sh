@@ -184,9 +184,9 @@ cmd_update() {
         setup_data_symlink "$RELEASES_DIR/$latest"
     fi
 
-    # Update symlink atomically
-    ln -sfn "$RELEASES_DIR/$latest" "${CURRENT_LINK}.new"
-    mv -T "${CURRENT_LINK}.new" "$CURRENT_LINK"
+    # Update symlink atomically (requires sudo as /var/www is owned by root)
+    sudo ln -sfn "$RELEASES_DIR/$latest" "${CURRENT_LINK}.new"
+    sudo mv -T "${CURRENT_LINK}.new" "$CURRENT_LINK"
 
     success "Updated to version $latest"
 
@@ -233,9 +233,9 @@ cmd_rollback() {
     # Set up data symlink for rollback version
     setup_data_symlink "$RELEASES_DIR/$previous"
 
-    # Update symlink
-    ln -sfn "$RELEASES_DIR/$previous" "${CURRENT_LINK}.new"
-    mv -T "${CURRENT_LINK}.new" "$CURRENT_LINK"
+    # Update symlink (requires sudo as /var/www is owned by root)
+    sudo ln -sfn "$RELEASES_DIR/$previous" "${CURRENT_LINK}.new"
+    sudo mv -T "${CURRENT_LINK}.new" "$CURRENT_LINK"
 
     success "Rolled back to version $previous"
 
