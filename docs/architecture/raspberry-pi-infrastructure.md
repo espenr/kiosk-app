@@ -22,14 +22,14 @@ The kiosk application runs on a Raspberry Pi Zero W 2 configured as a dedicated 
 ```
 Distribution: Raspbian GNU/Linux 12 (bookworm)
 Kernel: 6.12.x armv6l
-Hostname: raspberrypizerow2
+Hostname: pi
 ```
 
 ### Network Configuration
 
 | Interface | Configuration |
 |-----------|---------------|
-| Hostname (mDNS) | `raspberrypizerow2.local` |
+| Hostname (mDNS) | `pi.local` |
 | Static IP | `192.168.50.37` |
 | DNS Discovery | Avahi daemon (mDNS/Bonjour) |
 
@@ -227,10 +227,10 @@ npm run deploy
 # Manual deployment steps
 npm run build
 cd server && npm run build
-rsync -avz dist/ pi@raspberrypizerow2.local:/var/www/kiosk/
-rsync -avz server/dist/ pi@raspberrypizerow2.local:/var/www/kiosk/server/dist/
-rsync -avz server/package.json pi@raspberrypizerow2.local:/var/www/kiosk/server/
-ssh pi@raspberrypizerow2.local "cd /var/www/kiosk/server && npm install --omit=dev"
+rsync -avz dist/ pi@pi.local:/var/www/kiosk/
+rsync -avz server/dist/ pi@pi.local:/var/www/kiosk/server/dist/
+rsync -avz server/package.json pi@pi.local:/var/www/kiosk/server/
+ssh pi@pi.local "cd /var/www/kiosk/server && npm install --omit=dev"
 ```
 
 ## Initial Setup Procedure
@@ -260,7 +260,7 @@ flowchart TD
 
 ```bash
 # Connect to Pi
-ssh pi@raspberrypizerow2.local
+ssh pi@pi.local
 
 # Update system
 sudo apt update && sudo apt upgrade -y
@@ -458,13 +458,13 @@ sudo sync && sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'
 
 ```bash
 # Backup configuration
-ssh pi@raspberrypizerow2.local "tar -czvf /tmp/kiosk-backup.tar.gz \
+ssh pi@pi.local "tar -czvf /tmp/kiosk-backup.tar.gz \
   /var/www/kiosk/.env \
   /etc/nginx/sites-available/kiosk \
   /etc/systemd/system/kiosk-photos.service"
 
 # Download backup
-scp pi@raspberrypizerow2.local:/tmp/kiosk-backup.tar.gz ./
+scp pi@pi.local:/tmp/kiosk-backup.tar.gz ./
 ```
 
 ### Recovery Procedure
@@ -473,14 +473,14 @@ scp pi@raspberrypizerow2.local:/tmp/kiosk-backup.tar.gz ./
 # 1. Reflash SD card with Raspberry Pi OS
 # 2. Configure Wi-Fi and SSH
 # 3. Restore configuration
-scp kiosk-backup.tar.gz pi@raspberrypizerow2.local:/tmp/
-ssh pi@raspberrypizerow2.local "cd / && sudo tar -xzvf /tmp/kiosk-backup.tar.gz"
+scp kiosk-backup.tar.gz pi@pi.local:/tmp/
+ssh pi@pi.local "cd / && sudo tar -xzvf /tmp/kiosk-backup.tar.gz"
 
 # 4. Run deployment
 npm run deploy
 
 # 5. Restart services
-ssh pi@raspberrypizerow2.local "sudo systemctl daemon-reload && sudo systemctl restart nginx kiosk-photos"
+ssh pi@pi.local "sudo systemctl daemon-reload && sudo systemctl restart nginx kiosk-photos"
 ```
 
 ## Resource Monitoring
@@ -553,13 +553,13 @@ chmod 644 /etc/systemd/system/kiosk-photos.service
 # If deployment breaks the app:
 
 # 1. Keep a copy of previous dist
-ssh pi@raspberrypizerow2.local "cp -r /var/www/kiosk/assets /var/www/kiosk/assets.bak"
+ssh pi@pi.local "cp -r /var/www/kiosk/assets /var/www/kiosk/assets.bak"
 
 # 2. After failed deploy, restore
-ssh pi@raspberrypizerow2.local "rm -rf /var/www/kiosk/assets && mv /var/www/kiosk/assets.bak /var/www/kiosk/assets"
+ssh pi@pi.local "rm -rf /var/www/kiosk/assets && mv /var/www/kiosk/assets.bak /var/www/kiosk/assets"
 
 # 3. Restart services
-ssh pi@raspberrypizerow2.local "sudo systemctl restart nginx kiosk-photos"
+ssh pi@pi.local "sudo systemctl restart nginx kiosk-photos"
 ```
 
 ## Contact & Escalation

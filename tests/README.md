@@ -33,7 +33,7 @@ npm run typecheck && npm run lint
 ```bash
 npm run deploy
 # Verify deployment to Pi completes successfully
-# Check dashboard loads at http://raspberrypizerow2.local/
+# Check dashboard loads at http://pi.local/
 ```
 
 ### Integration Testing on Pi
@@ -70,7 +70,7 @@ After deployment, verify each section:
 **Setup Flow:**
 ```bash
 # First time setup
-curl http://raspberrypizerow2.local/admin
+curl http://pi.local/admin
 # Should show setup code on TV
 # Complete wizard on phone/laptop
 ```
@@ -85,7 +85,7 @@ curl http://raspberrypizerow2.local/admin
 **Recovery:**
 ```bash
 # SSH into Pi
-ssh pi@raspberrypizerow2.local
+ssh pi@pi.local
 sudo kiosk-admin reset-pin
 # Verify new setup code displayed
 ```
@@ -147,20 +147,20 @@ ping 192.168.50.37
 
 ```bash
 # Check photo proxy service on Pi
-ssh pi@raspberrypizerow2.local "systemctl status kiosk-photos"
+ssh pi@pi.local "systemctl status kiosk-photos"
 
 # Check fallback file exists
-curl http://raspberrypizerow2.local/photos.json | jq '.photos | length'
+curl http://pi.local/photos.json | jq '.photos | length'
 ```
 
 ### Admin View Not Loading
 
 ```bash
 # Check backend service
-ssh pi@raspberrypizerow2.local "systemctl status kiosk-photos"
+ssh pi@pi.local "systemctl status kiosk-photos"
 
 # Check Nginx config
-ssh pi@raspberrypizerow2.local "sudo nginx -t"
+ssh pi@pi.local "sudo nginx -t"
 ```
 
 ## Test Coverage

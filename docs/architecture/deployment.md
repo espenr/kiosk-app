@@ -65,7 +65,7 @@ server {
 **How it works:**
 1. Builds frontend: `npm run build` → creates `dist/`
 2. Builds backend: `cd server && npm run build` → creates `server/dist/`
-3. Rsyncs to Pi: `rsync -avz dist/ pi@raspberrypizerow2.local:/var/www/kiosk/dist/`
+3. Rsyncs to Pi: `rsync -avz dist/ pi@pi.local:/var/www/kiosk/dist/`
 4. Restarts services
 
 **Result:** Direct deployment to `/var/www/kiosk/dist/`
@@ -126,13 +126,13 @@ sudo /var/www/kiosk/scripts/auto-update.sh rollback
 
 **Check:**
 ```bash
-ssh pi@raspberrypizerow2.local "grep 'root' /etc/nginx/sites-available/kiosk"
+ssh pi@pi.local "grep 'root' /etc/nginx/sites-available/kiosk"
 # Should output: root /var/www/kiosk/dist;
 ```
 
 **Fix:**
 ```bash
-ssh pi@raspberrypizerow2.local "sudo sed -i 's|root /var/www/kiosk;|root /var/www/kiosk/dist;|' /etc/nginx/sites-available/kiosk && sudo systemctl reload nginx"
+ssh pi@pi.local "sudo sed -i 's|root /var/www/kiosk;|root /var/www/kiosk/dist;|' /etc/nginx/sites-available/kiosk && sudo systemctl reload nginx"
 ```
 
 ### Files in wrong location after deploy

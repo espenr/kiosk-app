@@ -77,11 +77,11 @@ npm run deploy  # Build and rsync to Pi
 | Device | Raspberry Pi Zero W 2 |
 | OS | Raspberry Pi OS |
 | IP | 192.168.50.37 |
-| mDNS | raspberrypizerow2.local |
+| mDNS | pi.local |
 | Deploy user | pi |
 | Web server | nginx + Node.js (photo proxy) |
 | Web root | /var/www/kiosk/dist/ |
-| URL | http://raspberrypizerow2.local/ |
+| URL | http://pi.local/ |
 
 ### Pi Setup (one-time)
 
@@ -155,7 +155,7 @@ Just push to main - the Pi polls GitHub and auto-deploys within 5 minutes.
 npm run deploy
 ```
 
-This checks Pi connectivity (tries mDNS `raspberrypizerow2.local` first, falls back to `192.168.50.37`), builds the app, and rsyncs to the Pi.
+This checks Pi connectivity (tries mDNS `pi.local` first, falls back to `192.168.50.37`), builds the app, and rsyncs to the Pi.
 
 ### Enable Auto-Deploy on Pi (one-time)
 

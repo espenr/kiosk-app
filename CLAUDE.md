@@ -381,7 +381,7 @@ sudo bash /var/www/kiosk/scripts/setup-admin.sh
 **Usage**:
 ```bash
 # SSH into Pi
-ssh pi@raspberrypizerow2.local
+ssh pi@pi.local
 
 # Reset PIN (preserves settings)
 sudo kiosk-admin reset-pin

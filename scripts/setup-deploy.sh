@@ -6,7 +6,7 @@
 set -euo pipefail
 
 PI_USER="pi"
-PI_MDNS="raspberrypizerow2.local"
+PI_MDNS="pi.local"
 PI_IP="192.168.50.37"
 PI_DIR="/var/www/kiosk"
 

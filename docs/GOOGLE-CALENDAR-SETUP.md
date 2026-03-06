@@ -75,12 +75,12 @@ Review and click **"Back to Dashboard"**
    - Click **"Add URI"**
    - Add: `http://localhost:3000` (for development)
    - Click **"Add URI"** again
-   - Add: `http://raspberrypizerow2.local` (for production)
+   - Add: `http://pi.local` (for production)
 6. **Authorized redirect URIs:**
    - Click **"Add URI"**
    - Add: `http://localhost:3000/calendar/callback` (development)
    - Click **"Add URI"** again
-   - Add: `http://raspberrypizerow2.local/calendar/callback` (production)
+   - Add: `http://pi.local/calendar/callback` (production)
 7. Click **"Create"**
 
 ## Step 5: Copy Credentials
@@ -103,7 +103,7 @@ You can always retrieve them later from:
 
 ### On Raspberry Pi
 
-1. Open browser to: `http://raspberrypizerow2.local/admin`
+1. Open browser to: `http://pi.local/admin`
 2. Login with your PIN
 3. Scroll to **"Google Calendar"** section
 4. Paste:

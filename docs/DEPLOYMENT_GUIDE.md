@@ -59,7 +59,7 @@ sudo apt install -y unclutter
 # Install xdotool (for refresh automation if needed)
 sudo apt install -y xdotool
 
-# Install avahi for mDNS (allows resolving raspberrypizerow2.local from any LAN machine)
+# Install avahi for mDNS (allows resolving pi.local from any LAN machine)
 sudo apt install -y avahi-daemon
 sudo systemctl enable avahi-daemon
 ```
@@ -310,7 +310,7 @@ xdotool key F5' > ~/refresh-browser.sh
 chmod +x ~/refresh-browser.sh
 
 # Add to deployment
-ssh pi@raspberrypizerow2.local '~/refresh-browser.sh'
+ssh pi@pi.local '~/refresh-browser.sh'
 ```
 
 ## Monitoring and Maintenance
