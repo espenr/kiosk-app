@@ -115,6 +115,17 @@ export async function updateConfig(config: KioskConfig, pin: string): Promise<{ 
 }
 
 /**
+ * Auto-save configuration (no PIN required, uses machine secret)
+ * Returns updated config with timestamp
+ */
+export async function autoSaveConfig(config: KioskConfig): Promise<KioskConfig> {
+  return apiFetch<KioskConfig>('/config/auto', {
+    method: 'PATCH',
+    body: JSON.stringify(config),
+  });
+}
+
+/**
  * Factory reset (delete all data, requires PIN)
  */
 export async function factoryReset(pin: string): Promise<{ success: boolean }> {

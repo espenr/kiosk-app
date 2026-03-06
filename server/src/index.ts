@@ -24,6 +24,7 @@ import {
   handleGetConfig,
   handleGetPublicConfig,
   handleUpdateConfig,
+  handleAutoSaveConfig,
   handleFactoryReset,
 } from './handlers/config.js';
 import { handleGetCalendarEvents } from './handlers/calendar.js';
@@ -198,7 +199,7 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
       'Access-Control-Allow-Origin': getAllowOrigin(req),
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
       'Access-Control-Allow-Credentials': 'true',
     });
@@ -245,6 +246,11 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
 
   if (url === '/api/config' && req.method === 'PUT') {
     await handleUpdateConfig(req, res);
+    return;
+  }
+
+  if (url === '/api/config/auto' && req.method === 'PATCH') {
+    await handleAutoSaveConfig(req, res);
     return;
   }
 

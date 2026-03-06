@@ -1,6 +1,6 @@
-import { createContext, ReactNode, useContext, useState, useEffect } from 'react';
+import { createContext, ReactNode, useContext, useState, useEffect, useRef } from 'react';
 import { STORAGE_KEYS, loadFromStorage, saveToStorage } from '../utils/storage';
-import { getConfig, getPublicConfig } from '../services/auth';
+import { getConfig, getPublicConfig, autoSaveConfig } from '../services/auth';
 import { invalidateCalendarCache } from '../hooks/useCalendar';
 
 // Kiosk configuration for API integrations and settings
@@ -28,6 +28,7 @@ export interface KioskConfig {
     serviceAccountKey?: string; // base64-encoded JSON key (not exposed to frontend)
     calendars: CalendarSource[];
   };
+  lastModified?: number; // Unix timestamp (ms) for conflict detection
 }
 
 // Individual calendar source (one per family member)
@@ -77,6 +78,7 @@ interface ConfigContextType {
   isConfigured: boolean;
   isServerBacked: boolean;
   syncWithServer: () => Promise<void>;
+  setIsDirty: (dirty: boolean) => void; // Blocks auto-save during user editing
 }
 
 const ConfigContext = createContext<ConfigContextType>({
@@ -90,6 +92,7 @@ const ConfigContext = createContext<ConfigContextType>({
   isConfigured: false,
   isServerBacked: false,
   syncWithServer: async () => {},
+  setIsDirty: () => {},
 });
 
 // Remove undefined values from an object (shallow)
@@ -154,6 +157,8 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
   });
 
   const [isServerBacked, setIsServerBacked] = useState(false);
+  const [isDirty, setIsDirty] = useState(false); // Blocks auto-save during user editing
+  const autoSaveTimeoutRef = useRef<number | null>(null);
 
   // Try to load from server on mount
   useEffect(() => {
@@ -196,6 +201,19 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
         // Merge public config with localStorage for missing fields
         const stored = loadFromStorage<Partial<KioskConfig>>(STORAGE_KEYS.CONFIG, {});
         const merged = mergeWithDefaults({ ...stored, ...publicConfig });
+
+        // Compare timestamps for migration from localStorage → server
+        const storedTimestamp = stored.lastModified || 0;
+        const serverTimestamp = (publicConfig as Partial<KioskConfig>).lastModified || 0;
+
+        if (storedTimestamp > serverTimestamp && Object.keys(stored).length > 0) {
+          console.log('[ConfigContext] localStorage is newer than server, may need migration', {
+            stored: storedTimestamp,
+            server: serverTimestamp,
+          });
+          // Note: Migration will happen when user next saves in admin view
+        }
+
         setConfig(merged);
         setIsServerBacked(true);
       } catch {
@@ -214,6 +232,48 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
       saveToStorage(STORAGE_KEYS.CONFIG, config);
     }
   }, [config, isServerBacked]);
+
+  // Auto-save to server when config changes (debounced, respects dirty flag)
+  useEffect(() => {
+    // Only auto-save if server-backed, not during user editing, and not on initial mount
+    if (!isServerBacked || isDirty) {
+      return;
+    }
+
+    // Skip if this is the initial default config (no timestamp yet)
+    if (!config.lastModified) {
+      return;
+    }
+
+    // Clear existing timeout
+    if (autoSaveTimeoutRef.current !== null) {
+      window.clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    // Debounce auto-save by 1 second
+    autoSaveTimeoutRef.current = window.setTimeout(() => {
+      autoSaveConfig(config)
+        .then((updatedConfig) => {
+          console.log('[ConfigContext] Auto-saved config to server', {
+            timestamp: updatedConfig.lastModified,
+          });
+          // Update local config with server's timestamp
+          setConfig(updatedConfig);
+        })
+        .catch((err) => {
+          console.error('[ConfigContext] Auto-save failed:', err);
+          // Fall back to localStorage on error
+          setIsServerBacked(false);
+        });
+    }, 1000);
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (autoSaveTimeoutRef.current !== null) {
+        window.clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [config, isServerBacked, isDirty]);
 
   const updateConfig = (updates: Partial<KioskConfig>) => {
     setConfig(prev => ({ ...prev, ...updates }));
@@ -254,10 +314,37 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     }));
   };
 
-  // Sync config from server
+  // Sync config from server (respects dirty flag to avoid overwriting user edits)
   const syncWithServer = async () => {
+    // Block sync during user editing to prevent race conditions
+    if (isDirty) {
+      console.log('[ConfigContext] Skipping sync (user is editing)');
+      return;
+    }
+
     try {
       const serverConfig = await getConfig();
+
+      // Compare timestamps for conflict detection
+      const currentTimestamp = config.lastModified || 0;
+      const serverTimestamp = serverConfig.lastModified || 0;
+
+      if (currentTimestamp > serverTimestamp) {
+        // Local config is newer - log conflict but allow override
+        console.warn('[ConfigContext] Local config is newer than server', {
+          local: currentTimestamp,
+          server: serverTimestamp,
+          diff: currentTimestamp - serverTimestamp,
+        });
+        // Still use server config since syncWithServer was explicitly called
+      } else if (serverTimestamp > currentTimestamp) {
+        console.log('[ConfigContext] Server config is newer', {
+          local: currentTimestamp,
+          server: serverTimestamp,
+          diff: serverTimestamp - currentTimestamp,
+        });
+      }
+
       console.log('[ConfigContext] Synced config from server');
 
       // Invalidate calendar cache when config changes
@@ -288,6 +375,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
         isConfigured,
         isServerBacked,
         syncWithServer,
+        setIsDirty,
       }}
     >
       {children}

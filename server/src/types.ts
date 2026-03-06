@@ -86,6 +86,7 @@ export interface KioskConfig {
     serviceAccountKey?: string; // base64-encoded JSON key file
     calendars: CalendarSource[];
   };
+  lastModified?: number; // Unix timestamp (ms) for conflict detection
 }
 
 export interface AuthStatusResponse {
@@ -125,6 +126,15 @@ export interface PublicConfig {
     longitude: number;
     stopPlaceIds: string[];
     stopPlaceName?: string;
+  };
+  apiKeys: {
+    tibber: string; // Needed for dashboard electricity widget
+  };
+  electricity: {
+    gridFee: {
+      day: number;
+      night: number;
+    };
   };
   photos: {
     interval: number;

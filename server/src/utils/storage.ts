@@ -142,6 +142,7 @@ export function loadConfigInternal(): KioskConfig {
 /**
  * Encrypt and save config to disk
  * File permissions: 0o600 (read/write owner only)
+ * Automatically sets lastModified timestamp
  */
 export function saveConfig(config: KioskConfig, pin: string): void {
   ensureDataDir();
@@ -151,14 +152,20 @@ export function saveConfig(config: KioskConfig, pin: string): void {
     throw new Error('Auth data not found');
   }
 
-  const content = JSON.stringify(config, null, 2);
+  // Always set timestamp on save for conflict detection
+  const configWithTimestamp = {
+    ...config,
+    lastModified: Date.now(),
+  };
+
+  const content = JSON.stringify(configWithTimestamp, null, 2);
   const encrypted = encrypt(content, pin, authData.salt);
 
   writeFileSync(CONFIG_FILE, encrypted, { mode: 0o600 });
   chmodSync(CONFIG_FILE, 0o600); // Ensure permissions
 
   // Also save public config (unencrypted, non-sensitive data)
-  savePublicConfig(config);
+  savePublicConfig(configWithTimestamp);
 }
 
 /**
@@ -170,6 +177,12 @@ export function savePublicConfig(config: KioskConfig): void {
 
   const publicConfig: PublicConfig = {
     location: config.location,
+    apiKeys: {
+      tibber: config.apiKeys.tibber,
+    },
+    electricity: {
+      gridFee: config.electricity.gridFee,
+    },
     photos: {
       interval: config.photos.interval,
     },

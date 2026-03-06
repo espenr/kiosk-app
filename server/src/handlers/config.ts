@@ -3,11 +3,11 @@
  */
 
 import { IncomingMessage, ServerResponse } from 'node:http';
-import { writeFileSync, existsSync, mkdirSync, chmodSync } from 'node:fs';
+import { writeFileSync, existsSync, mkdirSync, chmodSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadAuthData, loadConfig, saveConfig, deleteConfigData, loadPublicConfig } from '../utils/storage.js';
-import { hashPin } from '../utils/crypto.js';
+import { loadAuthData, loadConfig, saveConfig, deleteConfigData, loadPublicConfig, savePublicConfig } from '../utils/storage.js';
+import { hashPin, encrypt, decrypt } from '../utils/crypto.js';
 import { getConfigFromSession, cacheConfigInSession } from '../utils/sessions.js';
 import { parseJsonBody, sendJson, requireAuth } from '../utils/http.js';
 import type { UpdateConfigRequest, FactoryResetRequest, PublicConfig, KioskConfig } from '../types.js';
@@ -80,6 +80,8 @@ export function handleGetPublicConfig(req: IncomingMessage, res: ServerResponse)
       // Return default config if setup not complete
       const defaultConfig: PublicConfig = {
         location: { latitude: 63.4325, longitude: 10.6379, stopPlaceIds: [] },
+        apiKeys: { tibber: '' },
+        electricity: { gridFee: { day: 0.3604, night: 0.2292 } },
         photos: { interval: 30 },
         calendar: {},
       };
@@ -93,6 +95,8 @@ export function handleGetPublicConfig(req: IncomingMessage, res: ServerResponse)
       // Return default config if file doesn't exist
       const defaultConfig: PublicConfig = {
         location: { latitude: 63.4325, longitude: 10.6379, stopPlaceIds: [] },
+        apiKeys: { tibber: '' },
+        electricity: { gridFee: { day: 0.3604, night: 0.2292 } },
         photos: { interval: 30 },
         calendar: {},
       };
@@ -105,6 +109,72 @@ export function handleGetPublicConfig(req: IncomingMessage, res: ServerResponse)
     console.error('Get public config error:', err);
     const message = err instanceof Error ? err.message : 'Failed to load public config';
     sendJson(res, 500, { error: message }, { allowOrigin: req.headers.origin });
+  }
+}
+
+/**
+ * PATCH /api/config/auto
+ * Auto-save configuration (requires authentication, no PIN needed)
+ * Uses machine secret for encryption instead of user PIN
+ */
+export async function handleAutoSaveConfig(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  try {
+    // Validate session
+    const sessionId = requireAuth(req);
+
+    // Parse request body
+    const config = await parseJsonBody<KioskConfig>(req);
+
+    if (!config) {
+      sendJson(res, 400, { error: 'Config required' });
+      return;
+    }
+
+    const authData = loadAuthData();
+    if (!authData) {
+      sendJson(res, 500, { error: 'Auth data not found' });
+      return;
+    }
+
+    // Load machine secret for encryption
+    const MACHINE_SECRET_FILE = join(DATA_DIR, 'machine.secret');
+    if (!existsSync(MACHINE_SECRET_FILE)) {
+      sendJson(res, 500, { error: 'Machine secret not found' });
+      return;
+    }
+
+    const machineSecret = readFileSync(MACHINE_SECRET_FILE);
+    const machinePin = machineSecret.toString('hex');
+
+    // Add timestamp for conflict detection
+    const configWithTimestamp = {
+      ...config,
+      lastModified: Date.now(),
+    };
+
+    // Encrypt config with machine secret
+    const content = JSON.stringify(configWithTimestamp, null, 2);
+    const encrypted = encrypt(content, machinePin, authData.salt);
+
+    // Save encrypted config
+    const CONFIG_FILE = join(DATA_DIR, 'config.enc.json');
+    writeFileSync(CONFIG_FILE, encrypted, { mode: 0o600 });
+    chmodSync(CONFIG_FILE, 0o600);
+
+    // Also save public config and calendar config for backend access
+    savePublicConfig(configWithTimestamp);
+    saveInternalCalendarConfig(configWithTimestamp);
+
+    // Update session cache
+    cacheConfigInSession(sessionId, configWithTimestamp);
+
+    // Return updated config with timestamp
+    sendJson(res, 200, configWithTimestamp, { allowOrigin: req.headers.origin, allowCredentials: true });
+  } catch (err) {
+    console.error('Auto-save config error:', err);
+    const message = err instanceof Error ? err.message : 'Failed to auto-save config';
+    const statusCode = message.includes('authenticate') || message.includes('Session') ? 401 : 500;
+    sendJson(res, statusCode, { error: message }, { allowOrigin: req.headers.origin, allowCredentials: true });
   }
 }
 

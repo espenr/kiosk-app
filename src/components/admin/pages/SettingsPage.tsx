@@ -2,7 +2,7 @@
  * Settings page - Configuration management interface
  */
 
-import { useState, useEffect } from 'preact/hooks';
+import { useState, useEffect, useCallback } from 'preact/hooks';
 import { route } from 'preact-router';
 import { getConfig, updateConfig, logout } from '../../../services/auth';
 import { useConfig } from '../../../contexts/ConfigContext';
@@ -15,7 +15,7 @@ import type { StopPlaceSuggestion } from '../../../services/entur';
 import versionInfo from '../../../version.json';
 
 export function SettingsPage() {
-  const { syncWithServer } = useConfig();
+  const { syncWithServer, setIsDirty } = useConfig();
   const [config, setConfig] = useState<KioskConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -26,13 +26,7 @@ export function SettingsPage() {
   const [selectedStop, setSelectedStop] = useState<StopPlaceSuggestion | null>(null);
   const [serviceAccountUploadError, setServiceAccountUploadError] = useState<string | null>(null);
 
-  // Load config on mount
-  useEffect(() => {
-    loadConfig();
-  }, []);
-
-
-  const loadConfig = async () => {
+  const loadConfig = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -53,6 +47,9 @@ export function SettingsPage() {
           categories: [],
         });
       }
+
+      // Clear dirty flag after loading config
+      setIsDirty(false);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load config';
 
@@ -67,7 +64,12 @@ export function SettingsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [setIsDirty]);
+
+  // Load config on mount
+  useEffect(() => {
+    loadConfig();
+  }, [loadConfig]);
 
   const handleLogout = async () => {
     try {
@@ -101,6 +103,9 @@ export function SettingsPage() {
 
       // Sync with ConfigContext
       await syncWithServer();
+
+      // Clear dirty flag after successful save
+      setIsDirty(false);
 
       // Invalidate calendar cache to force immediate refetch
       invalidateCalendarCache();
@@ -164,13 +169,20 @@ export function SettingsPage() {
   const updateField = (section: keyof KioskConfig, field: string, value: any) => {
     if (!config) return;
 
-    setConfig({
-      ...config,
-      [section]: {
-        ...config[section],
-        [field]: value,
-      },
-    });
+    // Set dirty flag when user starts editing
+    setIsDirty(true);
+
+    const currentSection = config[section];
+    // Only spread if current section is an object
+    if (typeof currentSection === 'object' && currentSection !== null) {
+      setConfig({
+        ...config,
+        [section]: {
+          ...currentSection,
+          [field]: value,
+        },
+      });
+    }
   };
 
   if (loading) {
@@ -572,6 +584,7 @@ export function SettingsPage() {
                   setPin('');
                   setError(null);
                   setSuccess(false);
+                  // Don't clear dirty flag on cancel - user may still be editing
                 }}
                 disabled={saving}
                 className="flex-1"
