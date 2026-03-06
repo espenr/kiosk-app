@@ -82,7 +82,7 @@ export function handleGetPublicConfig(req: IncomingMessage, res: ServerResponse)
         location: { latitude: 63.4325, longitude: 10.6379, stopPlaceIds: [] },
         apiKeys: { tibber: '' },
         electricity: { gridFee: { day: 0.3604, night: 0.2292 } },
-        photos: { interval: 30 },
+        photos: { sharedAlbumUrl: '', interval: 30 },
         calendar: { calendars: [], configured: false },
       };
       sendJson(res, 200, defaultConfig, { allowOrigin: req.headers.origin });
@@ -97,7 +97,7 @@ export function handleGetPublicConfig(req: IncomingMessage, res: ServerResponse)
         location: { latitude: 63.4325, longitude: 10.6379, stopPlaceIds: [] },
         apiKeys: { tibber: '' },
         electricity: { gridFee: { day: 0.3604, night: 0.2292 } },
-        photos: { interval: 30 },
+        photos: { sharedAlbumUrl: '', interval: 30 },
         calendar: { calendars: [], configured: false },
       };
       sendJson(res, 200, defaultConfig, { allowOrigin: req.headers.origin });

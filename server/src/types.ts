@@ -137,6 +137,7 @@ export interface PublicConfig {
     };
   };
   photos: {
+    sharedAlbumUrl: string;
     interval: number;
   };
   calendar: {

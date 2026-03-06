@@ -27,6 +27,7 @@ import {
   handleAutoSaveConfig,
   handleFactoryReset,
 } from './handlers/config.js';
+import { loadPublicConfig } from './utils/storage.js';
 import { handleGetCalendarEvents } from './handlers/calendar.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -94,7 +95,9 @@ function getAllowOrigin(req: IncomingMessage): string {
  * Handle GET /api/photos
  */
 async function handlePhotos(res: ServerResponse): Promise<void> {
-  const albumUrl = process.env.ICLOUD_ALBUM_URL;
+  // Load from public config instead of environment variable
+  const publicConfig = loadPublicConfig();
+  const albumUrl = publicConfig?.photos?.sharedAlbumUrl || process.env.ICLOUD_ALBUM_URL;
 
   if (!albumUrl) {
     sendJson(res, 500, { error: 'ICLOUD_ALBUM_URL not configured' });

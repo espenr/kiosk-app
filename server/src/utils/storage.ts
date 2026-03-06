@@ -184,6 +184,7 @@ export function savePublicConfig(config: KioskConfig): void {
       gridFee: config.electricity.gridFee,
     },
     photos: {
+      sharedAlbumUrl: config.photos.sharedAlbumUrl,
       interval: config.photos.interval,
     },
     calendar: {
