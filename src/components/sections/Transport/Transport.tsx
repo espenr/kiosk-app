@@ -1,5 +1,6 @@
 import { useTransport } from '../../../hooks/useTransport';
 import { formatDepartureTime, formatTimeUntil } from '../../../services/entur';
+import { Circle } from '../../icons';
 
 /**
  * Public transport departures from Entur API
@@ -60,7 +61,10 @@ export function Transport() {
         ({formatTimeUntil(nextDeparture.expectedTime)})
       </span>
       {nextDeparture.isRealtime && (
-        <span className="text-green-400 text-sm">● sanntid</span>
+        <span className="text-green-400 text-sm flex items-center gap-1">
+          <Circle size={8} fill="currentColor" />
+          sanntid
+        </span>
       )}
 
       {/* Upcoming departures */}

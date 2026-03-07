@@ -238,66 +238,33 @@ function getHourlyForecast(timeseries: MetNoTimeseries[]): HourlyForecast[] {
 }
 
 /**
- * Get wind direction arrow based on degrees
+ * Get wind direction name based on degrees
  * Wind direction is "from" direction, so arrow points "to" direction
  * @param degrees - 0=north, 90=east, 180=south, 270=west
+ * @returns Direction name for WindArrow component
  */
-export function getWindArrow(degrees: number): string {
+export function getWindDirection(degrees: number): 'down' | 'down-left' | 'left' | 'up-left' | 'up' | 'up-right' | 'right' | 'down-right' {
   // Normalize to 0-360
   const normalized = ((degrees % 360) + 360) % 360;
 
   // 8 directions, each covering 45 degrees
   // Arrow points TO where wind is blowing (opposite of FROM direction)
-  if (normalized >= 337.5 || normalized < 22.5) return '↓';   // FROM North
-  if (normalized >= 22.5 && normalized < 67.5) return '↙';    // FROM NE
-  if (normalized >= 67.5 && normalized < 112.5) return '←';   // FROM East
-  if (normalized >= 112.5 && normalized < 157.5) return '↖';  // FROM SE
-  if (normalized >= 157.5 && normalized < 202.5) return '↑';  // FROM South
-  if (normalized >= 202.5 && normalized < 247.5) return '↗';  // FROM SW
-  if (normalized >= 247.5 && normalized < 292.5) return '→';  // FROM West
-  return '↘'; // FROM NW
+  if (normalized >= 337.5 || normalized < 22.5) return 'down';       // FROM North
+  if (normalized >= 22.5 && normalized < 67.5) return 'down-left';   // FROM NE
+  if (normalized >= 67.5 && normalized < 112.5) return 'left';       // FROM East
+  if (normalized >= 112.5 && normalized < 157.5) return 'up-left';   // FROM SE
+  if (normalized >= 157.5 && normalized < 202.5) return 'up';        // FROM South
+  if (normalized >= 202.5 && normalized < 247.5) return 'up-right';  // FROM SW
+  if (normalized >= 247.5 && normalized < 292.5) return 'right';     // FROM West
+  return 'down-right'; // FROM NW
 }
 
 /**
- * Get weather icon component based on symbol code
+ * Get weather symbol code for use with WeatherIcon component
  * Met.no uses codes like: clearsky_day, partlycloudy_night, rain, etc.
+ * @param symbol - Symbol code from Met.no API
+ * @returns The symbol code as-is (used directly with WeatherIcon component)
  */
-export function getWeatherEmoji(symbol: string): string {
-  const base = symbol.split('_')[0]; // Remove _day/_night suffix
-
-  const emojiMap: Record<string, string> = {
-    clearsky: '☀️',
-    fair: '🌤️',
-    partlycloudy: '⛅',
-    cloudy: '☁️',
-    fog: '🌫️',
-    lightrain: '🌦️',
-    rain: '🌧️',
-    heavyrain: '🌧️',
-    lightrainshowers: '🌦️',
-    rainshowers: '🌧️',
-    heavyrainshowers: '🌧️',
-    lightsleet: '🌨️',
-    sleet: '🌨️',
-    heavysleet: '🌨️',
-    lightsnow: '🌨️',
-    snow: '❄️',
-    heavysnow: '❄️',
-    lightsnowshowers: '🌨️',
-    snowshowers: '❄️',
-    heavysnowshowers: '❄️',
-    thunder: '⛈️',
-    lightrainandthunder: '⛈️',
-    rainandthunder: '⛈️',
-    heavyrainandthunder: '⛈️',
-    lightsleetandthunder: '⛈️',
-    sleetandthunder: '⛈️',
-    lightssleetshowersandthunder: '⛈️',
-    heavysleetshowersandthunder: '⛈️',
-    lightsnowandthunder: '⛈️',
-    snowandthunder: '⛈️',
-    heavysnowandthunder: '⛈️',
-  };
-
-  return emojiMap[base] || '🌡️';
+export function getWeatherSymbol(symbol: string): string {
+  return symbol;
 }

@@ -2,6 +2,7 @@ import { useElectricity } from '@/hooks/useElectricity';
 import { useLiveMeasurement } from '@/hooks/useLiveMeasurement';
 import { useConfig } from '@/contexts/ConfigContext';
 import { formatPrice, getPriceLevelBgClass, getPriceLevelColor, getGridFee, getGridFeePeriod } from '@/services/tibber';
+import { Sun, Moon, Circle } from '@/components/icons';
 
 /**
  * Electricity prices from Tibber API
@@ -57,8 +58,9 @@ export function Electricity() {
     <div className="h-full w-full px-4 py-2 flex gap-4">
       {/* Current price - compact */}
       <div className="flex-shrink-0 flex flex-col justify-center border-r border-gray-700 pr-4">
-        <div className="text-xs text-gray-400">
-          Strømpris {currentPeriod === 'day' ? '☀️' : '🌙'}
+        <div className="text-xs text-gray-400 flex items-center gap-1">
+          <span>Strømpris</span>
+          {currentPeriod === 'day' ? <Sun size={14} /> : <Moon size={14} />}
         </div>
         {isLoading && !electricity ? (
           <div className="text-2xl font-bold text-gray-500">--,--</div>
@@ -80,7 +82,7 @@ export function Electricity() {
         <div className="flex-shrink-0 flex flex-col justify-center border-r border-gray-700 pr-4">
           <div className="text-xs text-gray-400 flex items-center gap-1">
             Forbruk
-            {isConnected && <span className="text-green-400">●</span>}
+            {isConnected && <Circle size={8} fill="currentColor" className="text-green-400" />}
           </div>
           <div className="text-2xl font-bold text-blue-400">
             {measurement ? formatPower(measurement.power) : '--'}
