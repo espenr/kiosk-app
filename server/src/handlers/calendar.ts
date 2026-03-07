@@ -17,8 +17,8 @@ const CONFIG_FILE = join(__dirname, '..', '..', 'data', 'config.internal.json');
 
 const CALENDAR_API_BASE = 'https://www.googleapis.com/calendar/v3';
 
-// JWT cache for service account
-let cachedJWT: { token: string; expiresAt: number } | null = null;
+// Access token cache for service account
+let cachedAccessToken: { token: string; expiresAt: number } | null = null;
 
 interface CalendarEvent {
   id: string;
@@ -91,25 +91,54 @@ function generateServiceAccountJWT(serviceAccountKey: string): string {
 }
 
 /**
- * Get service account token (cached)
- * Returns cached JWT if still valid (5-min buffer)
+ * Exchange JWT for access token via Google OAuth
  */
-function getServiceAccountToken(serviceAccountKey: string): string {
+async function exchangeJWTForAccessToken(jwt: string): Promise<string> {
+  const response = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: jwt,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Failed to exchange JWT for access token: ${error}`);
+  }
+
+  const data = await response.json();
+  return data.access_token;
+}
+
+/**
+ * Get service account access token (cached)
+ * Returns cached token if still valid (5-min buffer)
+ */
+async function getServiceAccountToken(serviceAccountKey: string): Promise<string> {
   const now = Date.now();
 
   // Return cached token if still valid (5-min buffer)
-  if (cachedJWT && cachedJWT.expiresAt > now + 5 * 60 * 1000) {
-    return cachedJWT.token;
+  if (cachedAccessToken && cachedAccessToken.expiresAt > now + 5 * 60 * 1000) {
+    console.log('Using cached access token');
+    return cachedAccessToken.token;
   }
 
-  // Generate new token
-  const token = generateServiceAccountJWT(serviceAccountKey);
-  cachedJWT = {
-    token,
+  // Generate new JWT and exchange for access token
+  console.log('Generating new JWT and exchanging for access token');
+  const jwt = generateServiceAccountJWT(serviceAccountKey);
+  const accessToken = await exchangeJWTForAccessToken(jwt);
+
+  cachedAccessToken = {
+    token: accessToken,
     expiresAt: now + 3600 * 1000, // 1 hour
   };
 
-  return token;
+  console.log('Access token obtained, expires in 1 hour');
+  return accessToken;
 }
 
 /**
@@ -153,6 +182,9 @@ async function fetchSingleCalendarEvents(
     console.error(`Calendar error for ${calendarName}:`, data.error.message);
     return [];
   }
+
+  const itemCount = (data.items || []).length;
+  console.log(`Calendar ${calendarName} (${calendarId}): ${itemCount} events`);
 
   return (data.items || []).map((item) => {
     const isAllDay = !item.start.dateTime;
@@ -225,8 +257,8 @@ export async function handleGetCalendarEvents(
       return;
     }
 
-    // Get service account token
-    const accessToken = getServiceAccountToken(serviceAccountKey);
+    // Get service account access token
+    const accessToken = await getServiceAccountToken(serviceAccountKey);
 
     // Calculate time range: now to 7 days from now
     const now = new Date();
@@ -236,6 +268,8 @@ export async function handleGetCalendarEvents(
     endDate.setDate(endDate.getDate() + 7);
     endDate.setHours(23, 59, 59, 999);
     const timeMax = endDate.toISOString();
+
+    console.log(`Fetching calendar events from ${timeMin} to ${timeMax}`);
 
     // Fetch all calendars in parallel
     const eventArrays = await Promise.all(

@@ -203,46 +203,44 @@ See full implementation plan: [`/docs/plans/kiosk-redesign.md`](./docs/plans/kio
 - Phase 6: Photo Slideshow (iCloud) - **COMPLETE**
 - Phase 7: Settings & Polish (Admin View) - **COMPLETE**
 
-## Google Calendar OAuth Integration
+## Google Calendar Service Account Integration
 
-Three methods to get a refresh token:
+The calendar widget uses **Google Service Account authentication** (not OAuth 2.0 user flow). This approach is correct for server-side calendar access without user interaction.
 
-**Method 1: Integrated OAuth Flow (Recommended)**
-Direct integration in the admin settings page:
-1. Navigate to `/admin/settings`
-2. Enter Google OAuth Client ID and Client Secret
-3. Click "Connect Google Calendar" button
-4. Authorize with Google account in popup
-5. Return to settings with auto-populated refresh token
-6. Click "Save Changes" and enter PIN to persist
+**Service Account Details:**
+- Project ID: `familycalendar-489421`
+- Service Account Email: `pi-537@familycalendar-489421.iam.gserviceaccount.com`
+- Authentication: JWT signed with private key → 1-hour access token
+- Credentials: Base64-encoded JSON key in `server/data/config.internal.json`
+- Scope: `https://www.googleapis.com/auth/calendar.readonly`
 
-The OAuth flow uses CSRF-protected state parameters and temporary session storage. Refresh token is not persisted until the user explicitly saves with PIN verification.
+**Critical Setup Requirement:**
 
-**Method 2: Web Flow Script**
-```bash
-node scripts/get-calendar-token-web.js
+Each calendar owner must share their Google Calendar with the service account:
+
+1. Open https://calendar.google.com
+2. Find calendar in left sidebar → Settings and sharing
+3. Share with specific people → Add: `pi-537@familycalendar-489421.iam.gserviceaccount.com`
+4. Permission: **See all event details**
+5. Click Send
+
+Without sharing, the API returns 401 Unauthorized and backend logs show:
 ```
-- Opens browser automatically
-- Handles OAuth callback seamlessly
-- Displays refresh token in terminal
-- No manual code entry needed
-
-**Method 3: Device Code Flow (Legacy)**
-```bash
-bash scripts/get-calendar-token.sh
+Calendar API error: "Request had invalid authentication credentials..."
 ```
-- CLI-only flow with manual code entry
-- Works on headless servers
-- Less convenient
 
-See `scripts/README-calendar-oauth.md` for detailed setup instructions.
+**Verify Setup:**
+```bash
+# Check calendar API works
+curl -s http://pi.local/api/calendar/events | jq '.events | length'
 
-**OAuth Architecture:**
-- Backend endpoints: `/api/oauth/google/init`, `/api/oauth/google/callback`
-- CSRF protection via cryptographic state parameter
-- Session-based authentication required
-- Redirect URIs: `http://localhost:3000/admin/calendar/callback` (dev), `http://pi.local/admin/calendar/callback` (prod)
-- Frontend callback page: `/admin/calendar/callback`
+# Check logs for auth errors
+ssh pi@pi.local "journalctl --since '5 minutes ago' | grep 'Calendar API error'"
+```
+
+**Complete Documentation:**
+- Full setup guide: [`docs/architecture/calendar-service-account-setup.md`](./docs/architecture/calendar-service-account-setup.md)
+- Troubleshooting, security, and migration from OAuth (if applicable)
 
 ## Tibber Live Consumption
 

@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026-03-07] - Calendar Service Account Authentication
+
+### Discovered
+- **Calendar widget uses Service Account authentication**: Implementation correctly uses Google Service Account with JWT (not OAuth 2.0 refresh tokens)
+- **Outdated documentation**: Multiple docs incorrectly describe OAuth flow (`widget-calendar.md`, `README-calendar-oauth.md`, CLAUDE.md Google Calendar section)
+- **Service account email**: `pi-537@familycalendar-489421.iam.gserviceaccount.com` from project `familycalendar-489421`
+
+### Required Setup
+- **Critical step**: Each calendar owner must share their Google Calendar with service account email for read access
+- **Permission level**: "See all event details" required (not just free/busy)
+- **Common error**: 401 Unauthorized if calendars not shared → backend logs show "invalid authentication credentials"
+
+### Added
+- `docs/architecture/calendar-service-account-setup.md` - Complete service account setup guide
+  - Why service account (not OAuth)
+  - Step-by-step sharing instructions
+  - Troubleshooting guide
+  - Security best practices
+
+### Technical Details
+- Backend generates JWT signed with service account private key (RS256)
+- JWT exchanged for 1-hour access token from Google OAuth endpoint
+- Token cached in memory with 5-minute renewal buffer
+- Credentials stored base64-encoded in `server/data/config.internal.json`
+- Scope: `https://www.googleapis.com/auth/calendar.readonly`
+
 ## [2026-03-04] - Raspberry Pi 2 Screen Blanking Fix
 
 ### Fixed

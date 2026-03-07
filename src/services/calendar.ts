@@ -1,7 +1,7 @@
 /**
  * Calendar service - Fetches calendar events from backend API
  *
- * The backend handles OAuth token refresh and Google Calendar API calls,
+ * The backend handles service account authentication and Google Calendar API calls,
  * keeping sensitive credentials server-side.
  */
 
@@ -45,7 +45,7 @@ interface BackendCalendarResponse {
 
 /**
  * Fetch calendar events from backend API
- * Backend handles OAuth token refresh and Google Calendar API calls
+ * Backend handles service account authentication and Google Calendar API calls
  */
 export async function fetchCalendarEvents(): Promise<CalendarData> {
   const response = await fetch(`${BACKEND_API}/api/calendar/events`);

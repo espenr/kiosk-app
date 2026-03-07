@@ -5,9 +5,10 @@
 | Property | Value |
 |----------|-------|
 | Data Source | Google Calendar API v3 |
-| Authentication | OAuth 2.0 with refresh token |
+| Authentication | Service Account (JWT) |
 | Refresh Interval | 15 minutes |
 | Cache Duration | 15 minutes |
+| Token Validity | 1 hour (auto-renewed) |
 | Location | Photo section overlay (72% of screen) |
 
 ## Purpose
@@ -18,13 +19,13 @@ Displays upcoming events from multiple Google Calendars (one per family member) 
 
 ```mermaid
 flowchart LR
-    A[useCalendar Hook] --> B[calendar.ts Service]
-    B --> C[Google OAuth Token Endpoint]
-    B --> D[Google Calendar API v3]
-    C --> B
-    D --> B
+    A[Frontend] --> B[Backend /api/calendar/events]
+    B --> C[Generate JWT]
+    C --> D[Google OAuth Token Endpoint]
+    D --> E[Access Token]
+    E --> F[Calendar API v3]
+    F --> B
     B --> A
-    A --> E[Calendar Component]
 ```
 
 ### Components
@@ -33,54 +34,48 @@ flowchart LR
 |-----------|------|----------------|
 | Calendar | `src/components/sections/Calendar/` | UI rendering, day grouping |
 | useCalendar | `src/hooks/useCalendar.ts` | State, caching, auto-refresh |
-| calendar service | `src/services/calendar.ts` | OAuth, API calls, parsing |
+| calendar service | `src/services/calendar.ts` | Frontend API calls |
+| calendar handler | `server/src/handlers/calendar.ts` | Backend JWT generation, Google API |
 
 ## Data Flow
 
 ```mermaid
 sequenceDiagram
-    participant Component
-    participant useCalendar
-    participant Service
+    participant Frontend
+    participant Backend
+    participant JWT as JWT Generator
     participant OAuth as Google OAuth
     participant API as Calendar API
 
-    Component->>useCalendar: mount
-    useCalendar->>useCalendar: check cache
-    alt Cache miss
-        useCalendar->>Service: fetchCalendarEvents()
-        Service->>Service: check access token
-        alt Token expired (< 5 min buffer)
-            Service->>OAuth: POST /token (refresh_token)
-            OAuth-->>Service: new access_token (1 hour)
-        end
-        loop For each calendar source
-            Service->>API: GET /calendars/{id}/events
-            API-->>Service: events array
-        end
-        Service->>Service: merge & sort by start time
-        Service-->>useCalendar: CalendarData
-        useCalendar-->>Component: events
+    Frontend->>Backend: GET /api/calendar/events
+    Backend->>Backend: Load service account key
+    Backend->>JWT: Generate JWT (signed with private key)
+    JWT->>OAuth: Exchange JWT for access token
+    OAuth-->>Backend: Access token (1 hour)
+    loop For each calendar
+        Backend->>API: GET /calendars/{id}/events
+        API-->>Backend: Events array
     end
+    Backend->>Backend: Merge & sort by start time
+    Backend-->>Frontend: {events: [...], fetchedAt: "..."}
 ```
 
 ## API Details
 
-### OAuth Token Endpoint
+### Service Account Authentication
 
 | Property | Value |
 |----------|-------|
-| Endpoint | `https://oauth2.googleapis.com/token` |
-| Method | POST |
-| Content-Type | application/x-www-form-urlencoded |
+| Method | JWT (JSON Web Token) |
+| Algorithm | RS256 (RSA with SHA-256) |
+| Token Validity | 1 hour |
+| Cache Strategy | In-memory with 5-min renewal buffer |
 
-**Request Body:**
-```
-client_id=xxx.apps.googleusercontent.com
-client_secret=GOCSPX-xxx
-refresh_token=1//xxx
-grant_type=refresh_token
-```
+**JWT Generation:**
+- Service account key loaded from `config.internal.json` (base64-encoded)
+- JWT signed with private key from service account JSON
+- Exchanged at `https://oauth2.googleapis.com/token` for access token
+- Access token used as Bearer token for Calendar API requests
 
 ### Calendar API
 
@@ -141,98 +136,98 @@ interface CalendarData {
 
 ## Configuration
 
-```typescript
-config.calendar = {
-  // OAuth credentials (from Google Cloud Console)
-  clientId: "746014227403-xxx.apps.googleusercontent.com",
-  clientSecret: "GOCSPX-xxx",
-  refreshToken: "1//0xxx",
-
-  // Calendar sources (one per family member)
-  calendars: [
-    {
-      id: "primary",  // User's primary calendar
-      name: "Espen",
-      color: "#4285f4",  // Google Blue
-      icon: "👨"
-    },
-    {
-      id: "family@group.calendar.google.com",
-      name: "Familie",
-      color: "#0f9d58",  // Google Green
-    },
-    {
-      id: "marie@gmail.com",
-      name: "Marie",
-      color: "#db4437",  // Google Red
-      icon: "👩"
-    },
-  ],
-};
+**Backend Config** (`server/data/config.internal.json`):
+```json
+{
+  "calendar": {
+    "serviceAccountKey": "ewogICJ0eX...base64-encoded JSON key...",
+    "calendars": [
+      {
+        "id": "espenrydningen@gmail.com",
+        "name": "Espen",
+        "color": "#f44355"
+      },
+      {
+        "id": "lenebu@gmail.com",
+        "name": "Lene",
+        "color": "#43f478"
+      }
+    ]
+  }
+}
 ```
+
+**Service Account Details:**
+- Email: `pi-537@familycalendar-489421.iam.gserviceaccount.com`
+- Project: `familycalendar-489421`
+- Scope: `https://www.googleapis.com/auth/calendar.readonly`
+
+**Public Config** (`server/data/config.public.json`):
+```json
+{
+  "calendar": {
+    "calendars": [
+      {"id": "espenrydningen@gmail.com", "name": "Espen", "color": "#f44355"}
+    ],
+    "configured": true
+  }
+}
+```
+Frontend receives only calendar metadata, never credentials.
 
 ## Setup Process
 
-```mermaid
-flowchart TD
-    A[Create Google Cloud Project] --> B[Enable Calendar API]
-    B --> C[Create OAuth Client ID]
-    C --> D[Configure consent screen]
-    D --> E[Run get-calendar-token.sh]
-    E --> F[Visit URL on any device]
-    F --> G[Enter code on Pi/terminal]
-    G --> H[Receive refresh_token]
-    H --> I[Configure in app localStorage]
-```
+See complete guide: [`docs/architecture/calendar-service-account-setup.md`](./calendar-service-account-setup.md)
 
-### Step-by-Step
+**Quick Summary:**
 
-1. **Create Google Cloud Project**
+1. **Create Google Cloud Project & Service Account**
    - Go to https://console.cloud.google.com
-   - Create new project
+   - Create project → Enable Calendar API
+   - IAM & Admin → Service Accounts → Create
+   - Download JSON key file
 
-2. **Enable Calendar API**
-   - APIs & Services → Library
-   - Search "Google Calendar API" → Enable
+2. **Share Calendars with Service Account**
+   - Open Google Calendar for each family member
+   - Settings → Share with specific people
+   - Add service account email (e.g., `pi-537@familycalendar-489421.iam.gserviceaccount.com`)
+   - Permission: "See all event details"
 
-3. **Create OAuth Client ID**
-   - APIs & Services → Credentials
-   - Create Credentials → OAuth client ID
-   - Application type: **TV and Limited Input devices**
-   - This type supports device code flow (no redirect URI needed)
+3. **Configure Kiosk App**
+   - Base64 encode service account JSON key
+   - Add to `server/data/config.internal.json`
+   - Restart backend server
 
-4. **Run Token Script**
-   ```bash
-   ./scripts/get-calendar-token.sh
-   ```
-   - Displays URL to visit
-   - Enter code on authorization page
-   - Script outputs refresh_token
-
-5. **Configure in App**
-   - Open app in browser
-   - Go to Settings
-   - Enter OAuth credentials and calendar IDs
+**Critical Step:** Calendars MUST be shared with service account email or API returns 401 Unauthorized.
 
 ## Caching Strategy
 
+**Backend JWT Cache:**
 ```typescript
-const CACHE_DURATION = 15 * 60 * 1000;   // 15 minutes
-const REFRESH_INTERVAL = 15 * 60 * 1000; // 15 minutes
-
-// Access token cached separately (1 hour validity)
-let cachedAccessToken: string | null = null;
-let tokenExpiresAt = 0;
+let cachedJWT: { token: string; expiresAt: number } | null = null;
 ```
+- JWT cached in memory for 1 hour
+- Auto-renewed when < 5 minutes remaining
+- No disk I/O for token refresh
 
-**Rationale**: Calendar events don't change frequently. 15-minute cache balances freshness with API quota.
+**Frontend Cache:**
+- 15-minute cache duration for calendar events
+- Auto-refresh every 15 minutes
+- Cache stored in React hook state
+
+**Rationale**: Calendar events don't change frequently. 15-minute cache balances freshness with API quota. JWT caching avoids regenerating signatures unnecessarily.
 
 ## Error Handling
 
-- **Per-calendar errors**: If one calendar fails, others still load
-- **Token refresh failure**: Shows "Kunne ikke fornye kalender-tilgang"
-- **Stale data on error**: Keeps displaying cached events
-- **Not configured**: Shows "Kalender ikke konfigurert"
+- **Per-calendar errors**: If one calendar fails (e.g., not shared), others still load
+- **Authentication failure**: Returns 401 if service account lacks access to calendar
+- **Not configured**: Backend returns `{events: [], error: "Calendar not configured"}`
+- **Backend logs**: Errors logged to journalctl for debugging (`journalctl | grep "Calendar API error"`)
+
+**Common Errors:**
+- `401 Unauthorized`: Calendar not shared with service account email
+- `403 Forbidden`: Service account lacks Calendar API permission in Google Cloud
+- `404 Not Found`: Calendar ID doesn't exist or was deleted
 
 ## Multi-Calendar Support
 
@@ -266,6 +261,15 @@ function parseAllDayDate(dateStr: string): Date {
 
 ## Finding Calendar IDs
 
-- **Primary calendar**: Use `"primary"` as ID
-- **Shared calendars**: Find in Google Calendar settings → Calendar ID
-- **Other users**: Use their email address as calendar ID (if shared with you)
+**For personal Google calendars:**
+- Use the user's Gmail address as calendar ID (e.g., `espenrydningen@gmail.com`)
+- The user must share their calendar with the service account email
+
+**For shared/group calendars:**
+- Find in Google Calendar settings → "Integrate calendar" → Calendar ID
+- Usually format: `groupname@group.calendar.google.com`
+
+**Service Account Access:**
+- Service accounts CANNOT use `"primary"` as calendar ID
+- Each calendar must be explicitly shared with service account email
+- Permission required: "See all event details" (not just free/busy)
