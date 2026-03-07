@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026-03-07] - Replace Weather Emojis with Official Yr.no Icons
+
+### Changed
+- **Weather icons**: Replaced Unicode emojis with official Met.no SVG weather icons for consistent cross-platform rendering
+- **Wind arrows**: Replaced Unicode arrows with Lucide React arrow icons
+- **UI indicators**: Replaced emoji-based indicators (sun/moon, realtime dots) with Lucide icons
+
+### Added
+- 62 official Met.no weather SVG icons (`src/assets/weather-icons/`)
+- `lucide-react` dependency for UI icons (Sun, Moon, Circle, AlertTriangle, arrow components)
+- `WeatherIcon` component (`src/components/icons/WeatherIcon.tsx`) - Displays weather icons from Met.no symbol codes
+- `WindArrow` component (`src/components/icons/WindArrow.tsx`) - Wind direction arrows using Lucide icons
+- Icon barrel export (`src/components/icons/index.ts`) for tree-shaking optimization
+
+### Updated Components
+- **Header.tsx**: Weather icons (current + hourly forecast), wind arrows, alert triangle icon
+- **Electricity.tsx**: Day/night indicators (Sun/Moon), realtime connection dot (Circle)
+- **Transport.tsx**: Realtime connection dot indicator (Circle)
+
+### Refactored Services
+- `weather.ts`:
+  - `getWeatherEmoji()` → `getWeatherSymbol()` - Returns Met.no symbol code for WeatherIcon component
+  - `getWindArrow()` → `getWindDirection()` - Returns direction name for WindArrow component
+
+### Bundle Impact
+- **Before**: 31.56 KB gzipped
+- **After**: 39.95 KB gzipped
+- **Increase**: +8.4 KB gzipped (~27% increase, acceptable for Pi Zero W 2)
+
+### Benefits
+- **Consistent rendering**: Identical icon appearance on macOS development and Raspberry Pi production
+- **Professional appearance**: Icons match official Yr.no website design
+- **No emoji dependencies**: No reliance on OS font emoji rendering differences
+- **SVG scalability**: Icons remain crisp at all sizes
+
 ## [2026-03-07] - Calendar Service Account Authentication
 
 ### Discovered

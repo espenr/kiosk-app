@@ -84,6 +84,28 @@ Each data source follows a consistent pattern:
 - Tailwind CSS via PostCSS (`postcss.config.js`, `tailwind.config.js`)
 - Path alias: `'@' -> 'src'`
 
+### Icon Strategy
+
+The app uses **official Met.no weather icons** and **Lucide React** for UI elements to ensure consistent cross-platform rendering.
+
+**Weather Icons** (`src/assets/weather-icons/`):
+- 62 official Met.no SVG icons from https://github.com/metno/weathericons
+- Icons match Met.no API symbol codes exactly (e.g., `clearsky_day.svg`, `rain.svg`, `partlycloudy_night.svg`)
+- Imported as raw SVG files via Vite glob imports for optimal bundling
+- `WeatherIcon` component (`src/components/icons/WeatherIcon.tsx`) handles rendering with fallback
+
+**UI Icons** (`lucide-react`):
+- Minimal tree-shaken imports: `Sun`, `Moon`, `Circle`, `AlertTriangle`, arrow components
+- Used for: wind direction arrows, day/night indicators, realtime connection dots
+- `WindArrow` component (`src/components/icons/WindArrow.tsx`) for directional arrows
+
+**Why not emojis?**
+- Unicode emojis render differently on macOS (colorful) vs Raspberry Pi (monochrome/missing)
+- SVG icons ensure pixel-perfect consistency across all platforms
+- Professional appearance matching official Yr.no website design
+
+**Bundle impact**: +8.4 KB gzipped (39.95 KB total, acceptable for Pi Zero W 2)
+
 ## Photo Slideshow Backend Proxy
 
 The photo slideshow fetches images from an iCloud Shared Album via a Node.js backend proxy that handles URL expiration automatically.
