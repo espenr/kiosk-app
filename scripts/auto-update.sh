@@ -102,7 +102,11 @@ cleanup_old_versions() {
     if (( count > MAX_VERSIONS )); then
         for ((i=MAX_VERSIONS; i<count; i++)); do
             log "Removing old version: ${versions[$i]}"
-            rm -rf "${versions[$i]}"
+            # Try with sudo first (for root-owned files), fall back to regular rm
+            if ! sudo rm -rf "${versions[$i]}" 2>/dev/null; then
+                # If sudo fails, try regular rm and ignore permission errors
+                rm -rf "${versions[$i]}" 2>/dev/null || log "Warning: Could not fully remove ${versions[$i]} (permission denied)"
+            fi
         done
     fi
 }
