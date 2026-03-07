@@ -55,7 +55,7 @@ jobs:
           mkdir -p release-staging/server
           cp -r dist release-staging/
           cp -r server/dist release-staging/server/
-          cp server/package.json release-staging/server/
+          cp server/package.json server/package-lock.json release-staging/server/
           cp package.json release-staging/
           cp -r scripts release-staging/
           echo "${{ steps.version.outputs.version }}" > release-staging/VERSION

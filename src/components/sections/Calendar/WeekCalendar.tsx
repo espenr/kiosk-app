@@ -143,12 +143,12 @@ function EventItem({ event }: EventItemProps) {
     >
       {/* Time row */}
       {!event.isAllDay && (
-        <div className="text-white font-semibold drop-shadow-md" style={{ fontSize: '1.1rem' }}>
+        <div className="text-white font-semibold drop-shadow-md" style={{ fontSize: '0.9rem' }}>
           {formatEventTime(event.start)}
         </div>
       )}
       {/* Title */}
-      <div className="text-white font-bold leading-snug break-words drop-shadow-md" style={{ fontSize: '1.4rem' }}>
+      <div className="text-white font-bold leading-snug break-words drop-shadow-md" style={{ fontSize: '1.1rem' }}>
         {event.title}
       </div>
     </div>

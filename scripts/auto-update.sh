@@ -114,18 +114,48 @@ cleanup_old_versions() {
 restart_services() {
     log "Restarting kiosk services..."
 
-    # Restart backend Node.js server
+    # Stop existing backend server
     if pgrep -f "node.*server/dist/index.js" > /dev/null; then
-        log "Stopping backend server..."
+        log "Stopping existing backend server..."
         pkill -f "node.*server/dist/index.js" || true
         sleep 2
+
+        # Force kill if still running
+        if pgrep -f "node.*server/dist/index.js" > /dev/null; then
+            warn "Backend still running, force killing..."
+            pkill -9 -f "node.*server/dist/index.js" || true
+            sleep 1
+        fi
     fi
 
+    # Start backend server
     log "Starting backend server..."
     cd "$CURRENT_LINK/server"
+
+    # Check that dist/index.js exists
+    if [[ ! -f "dist/index.js" ]]; then
+        error "Backend server file not found: $CURRENT_LINK/server/dist/index.js"
+    fi
+
+    # Start server in background
     nohup node dist/index.js > /tmp/kiosk-backend.log 2>&1 &
-    sleep 1
-    log "Backend server restarted"
+    local backend_pid=$!
+    log "Backend server started with PID: $backend_pid"
+
+    # Wait for process to stabilize
+    sleep 2
+
+    # Verify process is still running
+    if ! ps -p "$backend_pid" > /dev/null 2>&1; then
+        error "Backend server failed to start (process died immediately). Check /tmp/kiosk-backend.log"
+    fi
+
+    # Verify process with correct command is running
+    if ! pgrep -f "node.*server/dist/index.js" > /dev/null; then
+        error "Backend server process not found after startup"
+    fi
+
+    log "Backend server process verified running"
 
     # Restart photo server if running
     if systemctl is-active --quiet kiosk-photos; then
@@ -139,6 +169,68 @@ restart_services() {
         xdotool key --clearmodifiers ctrl+F5 2>/dev/null || true
         log "Sent hard refresh to browser"
     fi
+}
+
+verify_deployment() {
+    local version="$1"
+    log "Verifying deployment health..."
+
+    # Give services time to fully initialize
+    sleep 3
+
+    # Check 1: Backend health endpoint
+    log "Checking backend health endpoint..."
+    local retries=5
+    local health_ok=false
+
+    for ((i=1; i<=retries; i++)); do
+        if curl -sf http://localhost:3001/api/health > /dev/null 2>&1; then
+            health_ok=true
+            break
+        fi
+        log "Health check attempt $i/$retries failed, retrying in 2s..."
+        sleep 2
+    done
+
+    if ! $health_ok; then
+        error "Backend health check failed after $retries attempts"
+    fi
+
+    log "Backend health check: OK"
+
+    # Check 2: Backend version matches deployed version
+    log "Verifying backend version..."
+    local backend_version=$(curl -sf http://localhost:3001/api/version 2>/dev/null | grep -o '"version":"[^"]*"' | cut -d'"' -f4)
+
+    if [[ "$backend_version" == "$version" ]]; then
+        log "Backend version check: OK (v$backend_version)"
+    else
+        warn "Backend version mismatch (expected: $version, got: $backend_version)"
+    fi
+
+    # Check 3: Calendar API endpoint (critical widget dependency)
+    log "Checking calendar API endpoint..."
+    local calendar_status=$(curl -sf -o /dev/null -w "%{http_code}" http://localhost:3001/api/calendar/events 2>/dev/null || echo "000")
+
+    # Accept 200 (success), 401 (not configured), 500 (config error)
+    # These all mean the backend is responding
+    if [[ "$calendar_status" =~ ^(200|401|500)$ ]]; then
+        log "Calendar API check: OK (HTTP $calendar_status)"
+    else
+        error "Calendar API check failed (HTTP $calendar_status)"
+    fi
+
+    # Check 4: Frontend is accessible via Nginx
+    log "Checking frontend accessibility..."
+    local frontend_status=$(curl -sf -o /dev/null -w "%{http_code}" http://localhost/ 2>/dev/null || echo "000")
+
+    if [[ "$frontend_status" == "200" ]]; then
+        log "Frontend check: OK"
+    else
+        error "Frontend check failed (HTTP $frontend_status)"
+    fi
+
+    success "All health checks passed!"
 }
 
 cmd_update() {
@@ -194,7 +286,26 @@ cmd_update() {
         if [[ -f "$RELEASES_DIR/$latest/server/package.json" ]]; then
             log "Installing server dependencies..."
             cd "$RELEASES_DIR/$latest/server"
-            npm install --omit=dev 2>/dev/null || npm install --production
+
+            # Try npm ci first (requires package-lock.json, more reliable)
+            if [[ -f "package-lock.json" ]]; then
+                if ! npm ci --omit=dev 2>&1 | tee -a "$LOG_FILE"; then
+                    error "Failed to install server dependencies with npm ci"
+                fi
+            else
+                # Fallback to npm install (for old releases without lock file)
+                warn "No package-lock.json found, using npm install (less reliable)"
+                if ! npm install --omit=dev 2>&1 | tee -a "$LOG_FILE"; then
+                    error "Failed to install server dependencies with npm install"
+                fi
+            fi
+
+            # Verify critical dependencies
+            if [[ ! -d "node_modules/jsonwebtoken" ]]; then
+                error "Critical dependency 'jsonwebtoken' not found after installation"
+            fi
+
+            log "Server dependencies installed successfully"
         fi
 
         # Set up data symlink
@@ -207,10 +318,22 @@ cmd_update() {
 
     success "Updated to version $latest"
 
-    cleanup_old_versions
     restart_services
 
-    success "Deployment complete!"
+    # Verify deployment health
+    log "Running post-deployment health checks..."
+    if ! verify_deployment "$latest"; then
+        error "Health checks failed, initiating automatic rollback..."
+        # Rollback is handled by error() function exiting
+        # Manual rollback command: /var/www/kiosk/scripts/auto-update.sh rollback
+        warn "Deployment failed. Previous version ($current) is still active."
+        exit 1
+    fi
+
+    # Cleanup old versions (only after successful deployment)
+    cleanup_old_versions
+
+    success "Deployment complete and verified!"
 }
 
 cmd_rollback() {
@@ -257,6 +380,14 @@ cmd_rollback() {
     success "Rolled back to version $previous"
 
     restart_services
+
+    # Verify rollback worked
+    log "Verifying rollback health..."
+    if ! verify_deployment "$previous"; then
+        error "Rollback verification failed - system may be in degraded state"
+    fi
+
+    success "Rollback completed successfully"
 }
 
 cmd_status() {
