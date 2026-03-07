@@ -13,7 +13,7 @@ The kiosk application runs on a Raspberry Pi 2 Model B configured as a dedicated
 | RAM | 1 GB LPDDR2 |
 | Storage | 64 GB microSD |
 | Network | 2.4GHz 802.11 b/g/n Wi-Fi |
-| Display | 32" TV via mini-HDMI (1080x1920 portrait) |
+| Display | 32" TV via HDMI (1080x1920 portrait) |
 
 ## System Configuration
 
