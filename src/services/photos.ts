@@ -107,11 +107,25 @@ export async function fetchPhotos(): Promise<PhotosData> {
 /**
  * Preload an image to ensure smooth transitions
  * Returns a promise that resolves when the image is loaded
+ * Logs image dimensions for quality monitoring
  */
 export function preloadImage(url: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.onload = () => resolve();
+    img.onload = () => {
+      // Log actual loaded dimensions for debugging
+      console.log(`[Photo] Loaded: ${img.naturalWidth}x${img.naturalHeight}px`);
+
+      // Warn if image is lower resolution than display
+      if (img.naturalWidth < 1080) {
+        console.warn(
+          `[Photo] Low resolution detected: ${img.naturalWidth}px width (display: 1080px). ` +
+          `May appear blurry on TV.`
+        );
+      }
+
+      resolve();
+    };
     img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
     img.src = url;
   });

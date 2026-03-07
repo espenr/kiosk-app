@@ -10,13 +10,13 @@ interface DashboardLayoutProps {
 }
 
 /**
- * Fixed layout for 32" TV in portrait orientation (768x1125)
+ * Fixed layout for 32" TV in portrait orientation (1080x1920 native resolution)
  * Based on Balsamiq wireframe design
  *
  * Layout:
  * - Header: 8% (clock, date, weather)
- * - Photo + Calendar: 70% (slideshow with calendar overlay at bottom)
- * - Electricity: 12% (simple current + forecast text)
+ * - Photo + Calendar: 74% (slideshow with calendar overlay at bottom)
+ * - Electricity: 8% (simple current + forecast text)
  * - Transport: 10% (single next bus line)
  */
 export function DashboardLayout({

@@ -56,38 +56,38 @@ export function Electricity() {
 
   return (
     <div className="h-full w-full px-4 py-2 flex gap-4">
-      {/* Current price - compact */}
+      {/* Current price - compact, scaled for 1080x1920 */}
       <div className="flex-shrink-0 flex flex-col justify-center border-r border-gray-700 pr-4">
-        <div className="text-xs text-gray-400 flex items-center gap-1">
+        <div className="text-gray-400 flex items-center gap-1" style={{ fontSize: '1.1rem' }}>
           <span>Strømpris</span>
-          {currentPeriod === 'day' ? <Sun size={14} /> : <Moon size={14} />}
+          {currentPeriod === 'day' ? <Sun size={20} /> : <Moon size={20} />}
         </div>
         {isLoading && !electricity ? (
-          <div className="text-2xl font-bold text-gray-500">--,--</div>
+          <div className="font-bold text-gray-500" style={{ fontSize: '2.8rem' }}>--,--</div>
         ) : electricity?.current ? (
           <div
-            className="text-2xl font-bold"
-            style={{ color: getPriceLevelColor(electricity.current.level) }}
+            className="font-bold"
+            style={{ fontSize: '2.8rem', color: getPriceLevelColor(electricity.current.level) }}
           >
             {formatPrice(electricity.current.total + currentGridFee).replace('.', ',')}
           </div>
         ) : (
-          <div className="text-2xl font-bold text-gray-500">--,--</div>
+          <div className="font-bold text-gray-500" style={{ fontSize: '2.8rem' }}>--,--</div>
         )}
-        <div className="text-xs text-gray-400">kr/kWh</div>
+        <div className="text-gray-400" style={{ fontSize: '1.1rem' }}>kr/kWh</div>
       </div>
 
       {/* Live consumption from Tibber Pulse */}
       {electricity?.realTimeEnabled && (
         <div className="flex-shrink-0 flex flex-col justify-center border-r border-gray-700 pr-4">
-          <div className="text-xs text-gray-400 flex items-center gap-1">
+          <div className="text-gray-400 flex items-center gap-1" style={{ fontSize: '1.1rem' }}>
             Forbruk
-            {isConnected && <Circle size={8} fill="currentColor" className="text-green-400" />}
+            {isConnected && <Circle size={11} fill="currentColor" className="text-green-400" />}
           </div>
-          <div className="text-2xl font-bold text-blue-400">
+          <div className="font-bold text-blue-400" style={{ fontSize: '2.8rem' }}>
             {measurement ? formatPower(measurement.power) : '--'}
           </div>
-          <div className="text-xs text-gray-400">
+          <div className="text-gray-400" style={{ fontSize: '1.1rem' }}>
             {measurement
               ? `${measurement.accumulatedConsumption.toFixed(1)} kWh i dag`
               : 'Kobler til...'}
@@ -107,7 +107,7 @@ export function Electricity() {
               return (
                 <div key={i} className="flex-1 flex flex-col items-center min-w-0">
                   {/* Price above bar */}
-                  <div className="text-[8px] text-gray-400 truncate">
+                  <div className="text-gray-400 truncate" style={{ fontSize: '0.7rem' }}>
                     {formatPrice(price.total).replace('.', ',')}
                   </div>
                   {/* Bar */}
@@ -120,7 +120,7 @@ export function Electricity() {
                     />
                   </div>
                   {/* Time below bar */}
-                  <div className={`text-[8px] ${isCurrentHour ? 'text-white font-bold' : 'text-gray-500'}`}>
+                  <div className={isCurrentHour ? 'text-white font-bold' : 'text-gray-500'} style={{ fontSize: '0.7rem' }}>
                     {hour}
                   </div>
                 </div>

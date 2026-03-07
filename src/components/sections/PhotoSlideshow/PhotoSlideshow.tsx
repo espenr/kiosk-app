@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { usePhotos } from '../../../hooks/usePhotos';
 
 /**
  * Photo slideshow with crossfade transitions
- * Displays photos from iCloud Shared Album with Ken Burns effect
+ * Displays photos from iCloud Shared Album
  */
 export function PhotoSlideshow() {
   const { photos, currentPhoto, currentIndex, isLoading, error, isConfigured } =
@@ -14,10 +14,6 @@ export function PhotoSlideshow() {
     current: string | null;
     previous: string | null;
   }>({ current: null, previous: null });
-
-  // Track Ken Burns animation direction (alternates each slide)
-  const [kenBurnsDirection, setKenBurnsDirection] = useState(0);
-  const directionRef = useRef(0);
 
   // Update displayed photos when current photo changes
   useEffect(() => {
@@ -30,9 +26,6 @@ export function PhotoSlideshow() {
           previous: prev.current,
         };
       });
-      // Alternate Ken Burns direction
-      directionRef.current = (directionRef.current + 1) % 4;
-      setKenBurnsDirection(directionRef.current);
     }
   }, [currentPhoto?.url]);
 
@@ -79,23 +72,8 @@ export function PhotoSlideshow() {
     );
   }
 
-  // Get Ken Burns transform based on direction
-  const getKenBurnsStyle = (direction: number): React.CSSProperties => {
-    // Subtle zoom and pan variations
-    const transforms = [
-      { from: 'scale(1) translate(0%, 0%)', to: 'scale(1.08) translate(-1%, -1%)' },
-      { from: 'scale(1.08) translate(-1%, 1%)', to: 'scale(1) translate(0%, 0%)' },
-      { from: 'scale(1) translate(0%, 0%)', to: 'scale(1.08) translate(1%, -1%)' },
-      { from: 'scale(1.08) translate(1%, 1%)', to: 'scale(1) translate(0%, 0%)' },
-    ];
-    return {
-      '--kb-from': transforms[direction].from,
-      '--kb-to': transforms[direction].to,
-    } as React.CSSProperties;
-  };
-
   /**
-   * Renders a photo with blurred background and sharp foreground
+   * Renders a photo with blurred background and sharp foreground using native img tags
    * @param url - Photo URL
    * @returns Two-layer structure (blur + sharp)
    */
@@ -103,23 +81,20 @@ export function PhotoSlideshow() {
     return (
       <>
         {/* Blurred background layer - fills space with same image */}
-        <div
-          className="absolute inset-0 blur-photo-bg"
-          style={{
-            backgroundImage: `url(${url})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
+        <img
+          src={url}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover blur-photo-bg"
+          loading="eager"
+          decoding="async"
         />
         {/* Sharp foreground layer - preserves aspect ratio, top-aligned */}
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `url(${url})`,
-            backgroundSize: 'contain',
-            backgroundPosition: 'top center',
-            backgroundRepeat: 'no-repeat',
-          }}
+        <img
+          src={url}
+          alt="Family photo"
+          className="absolute inset-0 w-full h-full object-contain object-top"
+          loading="eager"
+          decoding="async"
         />
       </>
     );
@@ -134,14 +109,11 @@ export function PhotoSlideshow() {
         </div>
       )}
 
-      {/* Current photo (fading in with Ken Burns) */}
+      {/* Current photo (fading in) */}
       {displayedPhotos.current && (
         <div
           key={displayedPhotos.current}
-          className="absolute inset-0 animate-photo-fade-in animate-ken-burns"
-          style={{
-            ...getKenBurnsStyle(kenBurnsDirection),
-          }}
+          className="absolute inset-0 animate-photo-fade-in"
         >
           {renderPhotoLayers(displayedPhotos.current)}
         </div>

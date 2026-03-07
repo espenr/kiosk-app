@@ -93,19 +93,43 @@ export async function fetchPhotosFromICloud(albumUrl: string): Promise<Photo[]> 
 
   // Build photo URLs from response
   // The API returns multiple derivatives per photo (thumbnail + full size)
-  // We want to take every other one (the larger size, usually index 0 of each pair)
-  const items = Object.values(urlsData.items);
-  const photos: Photo[] = [];
+  // Strategy: Group derivatives by photoGuid, then select the first (typically highest-res)
+  const items = Object.entries(urlsData.items);
+  const photosByGuid = new Map<string, Array<{ url: string; checksum: string }>>();
 
-  // Take every other item (the larger derivative)
-  for (let i = 0; i < items.length; i += 2) {
-    const item = items[i];
+  // Group derivatives by their photoGuid (extract from checksum key format)
+  for (const [checksum, item] of items) {
+    // Checksum format appears to be: {photoGuid}_{derivativeIndex}_{hash}
+    // Extract photoGuid by taking everything before the first underscore
+    const photoGuid = checksum.split('_')[0] || checksum;
+
     if (item.url_location && item.url_path) {
-      photos.push({
+      if (!photosByGuid.has(photoGuid)) {
+        photosByGuid.set(photoGuid, []);
+      }
+      photosByGuid.get(photoGuid)!.push({
         url: `https://${item.url_location}${item.url_path}`,
+        checksum,
       });
     }
   }
+
+  // Select first derivative for each photo (typically highest resolution)
+  const photos: Photo[] = [];
+  let totalDerivatives = 0;
+
+  for (const [photoGuid, derivatives] of photosByGuid.entries()) {
+    if (derivatives.length > 0) {
+      // Always take first derivative (index 0)
+      photos.push({ url: derivatives[0].url });
+      totalDerivatives += derivatives.length;
+
+      // Log derivative selection for debugging
+      console.log(`[Photo] Selected derivative 1/${derivatives.length} for ${photoGuid.substring(0, 8)}...`);
+    }
+  }
+
+  console.log(`[Photo] Total: ${photos.length} photos, ${totalDerivatives} derivatives available`);
 
   return photos;
 }

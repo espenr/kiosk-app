@@ -36,16 +36,17 @@ export function Header() {
 
   return (
     <div className="h-full flex items-center justify-between px-3 relative">
-      {/* Clock - Large but balanced */}
+      {/* Clock - Large but balanced - Scaled for 1080x1920 display */}
       <div className="flex items-baseline">
-        <span className="text-8xl font-bold tabular-nums leading-none">{formattedHoursMinutes}</span>
-        <span className="text-3xl font-bold tabular-nums text-gray-400 ml-1">:{formattedSeconds}</span>
+        <span className="font-bold tabular-nums leading-none" style={{ fontSize: '8.5rem' }}>{formattedHoursMinutes}</span>
+        <span className="font-bold tabular-nums text-gray-400 ml-1" style={{ fontSize: '2.8rem' }}>:{formattedSeconds}</span>
       </div>
 
       {/* Date - Positioned over photo section with shadow for readability */}
       <div
-        className="absolute left-3 text-4xl font-bold text-white z-30"
+        className="absolute left-3 font-bold text-white z-30"
         style={{
+          fontSize: '3.5rem',
           top: 'calc(8vh + 0.5rem)',
           textShadow: '3px 3px 6px rgba(0,0,0,0.9), -1px -1px 3px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.7)'
         }}
@@ -83,7 +84,7 @@ export function Header() {
                     filter: 'drop-shadow(3px 3px 6px rgba(0,0,0,0.9)) drop-shadow(-1px -1px 3px rgba(0,0,0,0.8)) drop-shadow(0 0 20px rgba(0,0,0,0.7))'
                   }}
                 >
-                  <WeatherIcon symbol={getWeatherSymbol(hour.symbol)} size={48} />
+                  <WeatherIcon symbol={getWeatherSymbol(hour.symbol)} size={68} />
                 </div>
                 <div
                   className="text-white text-base font-semibold"
@@ -159,8 +160,8 @@ export function Header() {
             </div>
           ) : weather ? (
             <>
-              <WeatherIcon symbol={getWeatherSymbol(weather.current.symbol)} size={60} />
-              <span className="text-6xl font-semibold">{weather.current.temperature}°C</span>
+              <WeatherIcon symbol={getWeatherSymbol(weather.current.symbol)} size={85} />
+              <span className="font-semibold" style={{ fontSize: '5.6rem' }}>{weather.current.temperature}°C</span>
             </>
           ) : null}
         </div>

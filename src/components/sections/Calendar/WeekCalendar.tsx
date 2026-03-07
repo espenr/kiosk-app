@@ -97,16 +97,18 @@ function DayColumn({ day, events }: DayColumnProps) {
         }`}
       >
         <div
-          className={`text-xs font-semibold ${
+          className={`font-semibold ${
             day.isToday ? 'text-blue-400' : 'text-gray-400'
           }`}
+          style={{ fontSize: '1.1rem' }}
         >
           {day.dayName}
         </div>
         <div
-          className={`text-lg font-bold leading-tight ${
+          className={`font-bold leading-tight ${
             day.isToday ? 'text-blue-300' : 'text-gray-200'
           }`}
+          style={{ fontSize: '1.6rem' }}
         >
           {day.dayNumber}
         </div>
@@ -133,7 +135,7 @@ function EventItem({ event }: EventItemProps) {
 
   return (
     <div
-      className="text-sm p-2 rounded shadow-lg"
+      className="p-2 rounded shadow-lg"
       style={{
         backgroundColor: `${color}80`,
         borderLeft: `3px solid ${color}`,
@@ -141,12 +143,12 @@ function EventItem({ event }: EventItemProps) {
     >
       {/* Time row */}
       {!event.isAllDay && (
-        <div className="text-xs text-white font-semibold drop-shadow-md">
+        <div className="text-white font-semibold drop-shadow-md" style={{ fontSize: '1.1rem' }}>
           {formatEventTime(event.start)}
         </div>
       )}
       {/* Title */}
-      <div className="text-base text-white font-bold leading-snug break-words drop-shadow-md">
+      <div className="text-white font-bold leading-snug break-words drop-shadow-md" style={{ fontSize: '1.4rem' }}>
         {event.title}
       </div>
     </div>

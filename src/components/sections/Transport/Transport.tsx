@@ -48,23 +48,23 @@ export function Transport() {
 
   return (
     <div className="h-full w-full px-6 flex items-center gap-4">
-      {/* Bus number (line) */}
-      <span className="bg-blue-600 text-white px-3 py-1 rounded text-2xl font-bold">
+      {/* Bus number (line) - Scaled for 1080x1920 */}
+      <span className="bg-blue-600 text-white px-4 py-2 rounded font-bold" style={{ fontSize: '2.8rem' }}>
         {nextDeparture.line}
       </span>
 
       {/* Bus name (destination) */}
-      <span className="text-2xl font-semibold text-white">
+      <span className="font-semibold text-white" style={{ fontSize: '2.8rem' }}>
         {nextDeparture.destination}
       </span>
 
       {/* Departure time */}
-      <span className="text-3xl font-bold tabular-nums text-white">
+      <span className="font-bold tabular-nums text-white" style={{ fontSize: '3.5rem' }}>
         {formatDepartureTime(nextDeparture.expectedTime)}
       </span>
 
       {/* Time until and realtime indicator */}
-      <span className="text-gray-400 text-base">
+      <span className="text-gray-400" style={{ fontSize: '1.4rem' }}>
         ({formatTimeUntil(nextDeparture.expectedTime, currentTime)})
       </span>
       {nextDeparture.isRealtime && (
@@ -77,10 +77,10 @@ export function Transport() {
       {/* Upcoming departures */}
       {upcomingDepartures.length > 0 && (
         <div className="flex flex-col ml-4 border-l border-gray-700 pl-4">
-          <span className="text-gray-500 text-sm">Deretter</span>
+          <span className="text-gray-500" style={{ fontSize: '1.2rem' }}>Deretter</span>
           <div className="flex flex-col">
             {upcomingDepartures.map((dep, index) => (
-              <span key={index} className="text-xl tabular-nums text-gray-300 leading-tight">
+              <span key={index} className="tabular-nums text-gray-300 leading-tight" style={{ fontSize: '1.8rem' }}>
                 {formatDepartureTime(dep.expectedTime)}
               </span>
             ))}
