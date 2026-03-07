@@ -133,20 +133,20 @@ function EventItem({ event }: EventItemProps) {
 
   return (
     <div
-      className="text-xs p-1 rounded"
+      className="text-sm p-2 rounded shadow-lg"
       style={{
-        backgroundColor: `${color}30`,
+        backgroundColor: `${color}80`,
         borderLeft: `3px solid ${color}`,
       }}
     >
       {/* Time row */}
       {!event.isAllDay && (
-        <div className="text-[10px] text-gray-400 font-medium">
+        <div className="text-xs text-white font-semibold drop-shadow-md">
           {formatEventTime(event.start)}
         </div>
       )}
       {/* Title */}
-      <div className="text-gray-100 leading-tight break-words">
+      <div className="text-base text-white font-bold leading-snug break-words drop-shadow-md">
         {event.title}
       </div>
     </div>

@@ -22,6 +22,20 @@ This file provides guidance to Claude Code when working with this repository.
 - `npm run test:manual` - Start dev server for manual testing
 - `npm run run-puppeteer-test` - Run Puppeteer tests via shell script
 
+### TV Screenshot Workflow
+
+To capture screenshots of the actual TV display (not browser simulation):
+
+```bash
+# Capture screenshot from Raspberry Pi display
+ssh pi@pi.local 'DISPLAY=:0 scrot /tmp/screen.png' && scp pi@pi.local:/tmp/screen.png /tmp/kiosk-screenshot.png
+
+# Then read the screenshot
+# Read tool: /tmp/kiosk-screenshot.png
+```
+
+**Important:** This captures the actual framebuffer output from the Pi's HDMI display, showing exactly what appears on the 32" portrait TV (768x1366px).
+
 ### Deployment
 - `npm run deploy` - Build and deploy to Raspberry Pi via rsync
   - Target: `pi@192.168.50.37:/var/www/kiosk/`
