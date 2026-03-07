@@ -122,7 +122,7 @@ restart_services() {
     fi
 
     log "Starting backend server..."
-    cd "$KIOSK_DIR/server"
+    cd "$CURRENT_LINK/server"
     nohup node dist/index.js > /tmp/kiosk-backend.log 2>&1 &
     sleep 1
     log "Backend server restarted"
