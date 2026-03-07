@@ -15,6 +15,9 @@ export function PhotoSlideshow() {
     previous: string | null;
   }>({ current: null, previous: null });
 
+  // Track current aspect ratio to prevent layout shift
+  const [currentAspect, setCurrentAspect] = useState<string>('9/16'); // Default portrait
+
   // Update displayed photos when current photo changes
   useEffect(() => {
     if (currentPhoto?.url) {
@@ -78,13 +81,19 @@ export function PhotoSlideshow() {
    * @returns Two-layer structure (blur + sharp)
    */
   function renderPhotoLayers(url: string) {
+    const handleImageLoad = (e: Event) => {
+      const img = e.target as HTMLImageElement;
+      const aspect = `${img.naturalWidth}/${img.naturalHeight}`;
+      setCurrentAspect(aspect);
+    };
+
     return (
       <>
         {/* Blurred background layer - fills space with same image */}
         <img
           src={url}
           alt=""
-          className="absolute inset-0 w-full h-full object-cover blur-photo-bg"
+          className="absolute inset-0 w-full h-full object-cover blur-photo-bg photo-layer"
           loading="eager"
           decoding="async"
         />
@@ -92,19 +101,21 @@ export function PhotoSlideshow() {
         <img
           src={url}
           alt="Family photo"
-          className="absolute inset-0 w-full h-full object-contain object-top"
+          style={{ aspectRatio: currentAspect }}
+          className="absolute inset-0 w-full h-full object-contain object-top photo-layer"
           loading="eager"
           decoding="async"
+          onLoad={handleImageLoad}
         />
       </>
     );
   }
 
   return (
-    <div className="relative h-full w-full bg-gray-900 overflow-hidden">
+    <div className="relative h-full w-full bg-gray-900 overflow-hidden photo-slideshow-root">
       {/* Previous photo (fading out) */}
       {displayedPhotos.previous && displayedPhotos.previous !== displayedPhotos.current && (
-        <div className="absolute inset-0 animate-photo-fade-out">
+        <div className="absolute inset-0 animate-photo-fade-out photo-container">
           {renderPhotoLayers(displayedPhotos.previous)}
         </div>
       )}
@@ -113,7 +124,7 @@ export function PhotoSlideshow() {
       {displayedPhotos.current && (
         <div
           key={displayedPhotos.current}
-          className="absolute inset-0 animate-photo-fade-in"
+          className="absolute inset-0 animate-photo-fade-in photo-container"
         >
           {renderPhotoLayers(displayedPhotos.current)}
         </div>

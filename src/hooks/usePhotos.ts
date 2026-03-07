@@ -14,8 +14,8 @@ export interface UsePhotosResult {
   goTo: (index: number) => void;
 }
 
-// Cache photos for 5 minutes (server handles real caching with 45-min TTL)
-const CACHE_DURATION = 5 * 60 * 1000;
+// Cache photos for 45 minutes (matches backend cache TTL)
+const CACHE_DURATION = 45 * 60 * 1000;
 // Check for new photos every 10 minutes (server cache handles freshness)
 const REFRESH_INTERVAL = 10 * 60 * 1000;
 

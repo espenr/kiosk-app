@@ -55,7 +55,29 @@ body.admin-page #root {
   }
 }
 
-/* Blur effect for photo background layer */
+/* Blur effect for photo background layer (6px optimized for Pi 2 GPU) */
 .blur-photo-bg {
-  filter: blur(12px);
+  filter: blur(6px);
+}
+
+/* Optimize image rendering for crispness */
+.photo-layer {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: high-quality;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* GPU acceleration hints for smooth crossfades */
+.photo-container {
+  will-change: opacity;
+  transform: translateZ(0); /* Force GPU layer promotion */
+  contain: layout style paint; /* Constrain paint area */
+}
+
+/* Optimize compositor layer management */
+.photo-slideshow-root {
+  isolation: isolate;
+  backface-visibility: hidden;
 }
