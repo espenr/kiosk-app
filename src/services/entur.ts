@@ -156,9 +156,8 @@ export async function fetchDeparturesFromMultipleStops(
 /**
  * Format time until departure in Norwegian
  */
-export function formatTimeUntil(departure: Date): string {
-  const now = new Date();
-  const diffMs = departure.getTime() - now.getTime();
+export function formatTimeUntil(departure: Date, currentTime: Date = new Date()): string {
+  const diffMs = departure.getTime() - currentTime.getTime();
   const diffMinutes = Math.floor(diffMs / 60000);
 
   if (diffMinutes < 0) {

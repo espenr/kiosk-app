@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useTransport } from '../../../hooks/useTransport';
 import { formatDepartureTime, formatTimeUntil } from '../../../services/entur';
 import { Circle } from '../../icons';
@@ -8,10 +9,16 @@ import { Circle } from '../../icons';
  */
 export function Transport() {
   const { departures, isLoading, error } = useTransport();
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Update current time every second for live countdown
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Filter to departures in the future
-  const now = new Date();
-  const futureDepartures = departures.filter((d) => d.expectedTime > now);
+  const futureDepartures = departures.filter((d) => d.expectedTime > currentTime);
   const nextDeparture = futureDepartures[0];
   const upcomingDepartures = futureDepartures.slice(1, 3); // Next 2 after the first
 
@@ -58,7 +65,7 @@ export function Transport() {
 
       {/* Time until and realtime indicator */}
       <span className="text-gray-400 text-base">
-        ({formatTimeUntil(nextDeparture.expectedTime)})
+        ({formatTimeUntil(nextDeparture.expectedTime, currentTime)})
       </span>
       {nextDeparture.isRealtime && (
         <span className="text-green-400 text-sm flex items-center gap-1">
