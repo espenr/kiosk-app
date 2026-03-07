@@ -34,7 +34,7 @@ ssh pi@pi.local 'DISPLAY=:0 scrot /tmp/screen.png' && scp pi@pi.local:/tmp/scree
 # Read tool: /tmp/kiosk-screenshot.png
 ```
 
-**Important:** This captures the actual framebuffer output from the Pi's HDMI display, showing exactly what appears on the 32" portrait TV (768x1366px).
+**Important:** This captures the actual framebuffer output from the Pi's HDMI display, showing exactly what appears on the 32" portrait TV (1080x1920px native resolution).
 
 ### Deployment
 - `npm run deploy` - Build and deploy to Raspberry Pi via rsync
@@ -67,11 +67,11 @@ See deployment guide: [`docs/DEPLOYMENT_GUIDE.md`](./docs/DEPLOYMENT_GUIDE.md)
 ## Architecture
 
 ### Fixed-Layout Dashboard
-The application uses a fixed vertical layout optimized for a 32" portrait TV (768x1366px).
+The application uses a fixed vertical layout optimized for a 32" portrait TV (1080x1920px native resolution).
 
 **Layout Sections** (`src/components/layout/DashboardLayout.tsx`):
-- **Header** (10%): Clock, date, weather - `src/components/sections/Header/`
-- **Photo + Calendar** (72%): Side-by-side split - `src/components/sections/PhotoSlideshow/`, `src/components/sections/Calendar/`
+- **Header** (8%): Clock, date, weather - `src/components/sections/Header/`
+- **Photo + Calendar** (74%): Side-by-side split - `src/components/sections/PhotoSlideshow/`, `src/components/sections/Calendar/`
 - **Electricity** (8%): Current price, hourly chart - `src/components/sections/Electricity/`
 - **Transport** (10%): Bus departures - `src/components/sections/Transport/`
 

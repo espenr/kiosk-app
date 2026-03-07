@@ -53,9 +53,9 @@ flowchart TB
 
 | Component | File | Responsibility |
 |-----------|------|----------------|
-| PhotoSlideshow | `src/components/sections/PhotoSlideshow/` | UI rendering, Ken Burns effect, crossfade transitions, dual-layer blurred background |
-| usePhotos | `src/hooks/usePhotos.ts` | State management, auto-advance timer, preloading |
-| photos service | `src/services/photos.ts` | API calls, response parsing, fallback handling |
+| PhotoSlideshow | `src/components/sections/PhotoSlideshow/` | UI rendering, crossfade transitions, dual-layer blurred background with native img tags |
+| usePhotos | `src/hooks/usePhotos.ts` | State management, auto-advance timer, preloading, image dimension logging |
+| photos service | `src/services/photos.ts` | API calls, response parsing, fallback handling, quality monitoring |
 
 ### Visual Rendering
 
@@ -64,10 +64,10 @@ The photo slideshow uses a dual-layer rendering approach to preserve full image 
 **Dual-Layer Architecture:**
 ```
 ┌─────────────────────────────────┐
-│  Background Layer (blur)        │ ← Same image, background-size: cover
-│  ┌───────────────────────────┐  │   filter: blur(12px)
-│  │ Foreground Layer (sharp)  │  │ ← Original image, background-size: contain
-│  │                           │  │   background-position: top center
+│  Background Layer (blur)        │ ← Same image, <img> with object-fit: cover
+│  ┌───────────────────────────┐  │   CSS filter: blur(12px)
+│  │ Foreground Layer (sharp)  │  │ ← Original image, <img> with object-fit: contain
+│  │                           │  │   object-position: top center
 │  │                           │  │
 │  └───────────────────────────┘  │
 │                                 │
@@ -86,13 +86,16 @@ The photo slideshow uses a dual-layer rendering approach to preserve full image 
 - **No cropping**: Every photo displays in full, preserving composition
 - **Visual continuity**: Blurred background fills empty space naturally
 - **Performance**: GPU-accelerated blur (12px) optimized for Raspberry Pi Zero W 2
-- **Animations intact**: Ken Burns and crossfade apply to both layers uniformly
+- **Native optimization**: Browser-native image scaling and decoding for better quality
+- **Animations intact**: Crossfade transitions apply to both layers uniformly
 
 **Implementation:**
-- Background layer: `filter: blur(12px)` with `background-size: cover`
-- Foreground layer: `background-size: contain`, `background-position: top center`
+- Uses native `<img>` tags instead of CSS background-image for better browser optimization
+- Background layer: `<img>` with `filter: blur(12px)`, `object-fit: cover`, `loading="eager"`, `decoding="async"`
+- Foreground layer: `<img>` with `object-fit: contain`, `object-position: top center`
 - CSS class: `.blur-photo-bg` in `src/index.css`
 - Rendering: `renderPhotoLayers()` helper function in `PhotoSlideshow.tsx`
+- Quality logging: Frontend logs loaded image dimensions and warns if resolution < 1080px
 
 ### Backend Layer
 
@@ -100,7 +103,14 @@ The photo slideshow uses a dual-layer rendering approach to preserve full image 
 |-----------|------|----------------|
 | HTTP Server | `server/src/index.ts` | Request routing, CORS, error handling |
 | Cache | `server/src/cache.ts` | In-memory TTL cache with stale-while-revalidate |
-| iCloud Client | `server/src/photos.ts` | SharedStreams API integration |
+| iCloud Client | `server/src/photos.ts` | SharedStreams API integration, smart derivative selection |
+
+**Derivative Selection Strategy:**
+The iCloud API returns multiple URL derivatives per photo (potentially thumbnails and full-size). The server groups derivatives by photoGuid and always selects the first derivative (index 0), which is typically the highest resolution available. Server logs output:
+```
+[Photo] Selected derivative 1/X for {photoGuid}...
+[Photo] Total: N photos, M derivatives available
+```
 
 ### Infrastructure
 
