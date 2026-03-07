@@ -42,7 +42,21 @@ export function useTransport(): UseTransportResult {
 
     try {
       const data = await fetchDeparturesFromMultipleStops(stopPlaceIds, 10);
-      setDepartures(data);
+
+      // Apply destination filter if configured
+      let filteredData = data;
+      const filter = config.transport?.destinationFilter;
+      if (filter && filter.destinations.length > 0) {
+        filteredData = data.filter(departure => {
+          const matchesFilter = filter.destinations.some(dest =>
+            departure.destination.toLowerCase().includes(dest.toLowerCase())
+          );
+
+          return filter.mode === 'whitelist' ? matchesFilter : !matchesFilter;
+        });
+      }
+
+      setDepartures(filteredData);
       setLastUpdated(new Date());
       setError(null);
     } catch (err) {
@@ -52,7 +66,7 @@ export function useTransport(): UseTransportResult {
     } finally {
       setIsLoading(false);
     }
-  }, [stopPlaceIds]);
+  }, [stopPlaceIds, config.transport?.destinationFilter]);
 
   // Initial fetch
   useEffect(() => {

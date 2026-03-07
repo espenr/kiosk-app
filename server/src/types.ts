@@ -86,6 +86,12 @@ export interface KioskConfig {
     serviceAccountKey?: string; // base64-encoded JSON key file
     calendars: CalendarSource[];
   };
+  transport?: {
+    destinationFilter?: {
+      mode: 'whitelist' | 'blacklist';
+      destinations: string[];
+    };
+  };
   lastModified?: number; // Unix timestamp (ms) for conflict detection
 }
 
@@ -143,5 +149,11 @@ export interface PublicConfig {
   calendar: {
     calendars: CalendarSource[]; // Calendar list is not sensitive (IDs are shareable)
     configured: boolean; // Whether service account is configured
+  };
+  transport?: {
+    destinationFilter?: {
+      mode: 'whitelist' | 'blacklist';
+      destinations: string[];
+    };
   };
 }

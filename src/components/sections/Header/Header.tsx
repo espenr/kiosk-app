@@ -87,7 +87,7 @@ export function Header() {
                   <WeatherIcon symbol={getWeatherSymbol(hour.symbol)} size={68} />
                 </div>
                 <div
-                  className="text-white text-base font-semibold"
+                  className="text-white text-2xl font-semibold"
                   style={{
                     textShadow: '3px 3px 6px rgba(0,0,0,0.9), -1px -1px 3px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.7)'
                   }}
@@ -95,7 +95,7 @@ export function Header() {
                   {hour.temperature}°
                 </div>
                 <div
-                  className="flex items-center justify-center gap-1 text-white text-sm font-semibold"
+                  className="flex items-center justify-center gap-1 text-white text-lg font-semibold"
                   style={{
                     filter: 'drop-shadow(3px 3px 6px rgba(0,0,0,0.9)) drop-shadow(-1px -1px 3px rgba(0,0,0,0.8)) drop-shadow(0 0 20px rgba(0,0,0,0.7))'
                   }}
@@ -107,7 +107,7 @@ export function Header() {
             );
           }) || (
             // Placeholder when loading
-            ['--', '--', '--', '--'].map((_, index) => (
+            ['--', '--', '--', '--', '--'].map((_, index) => (
               <div key={index} className="text-center w-16">
                 <div
                   className="text-gray-300 text-sm font-semibold"
@@ -126,7 +126,7 @@ export function Header() {
                   --
                 </div>
                 <div
-                  className="text-white text-base font-semibold"
+                  className="text-white text-2xl font-semibold"
                   style={{
                     textShadow: '3px 3px 6px rgba(0,0,0,0.9), -1px -1px 3px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.7)'
                   }}
@@ -134,7 +134,7 @@ export function Header() {
                   --°
                 </div>
                 <div
-                  className="flex items-center justify-center gap-1 text-white text-sm font-semibold"
+                  className="flex items-center justify-center gap-1 text-white text-lg font-semibold"
                   style={{
                     textShadow: '3px 3px 6px rgba(0,0,0,0.9), -1px -1px 3px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.7)'
                   }}

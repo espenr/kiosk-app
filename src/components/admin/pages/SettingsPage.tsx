@@ -302,6 +302,125 @@ export function SettingsPage() {
           <p className="text-sm text-gray-500 mt-4">
             Used for weather forecast and transport departures
           </p>
+
+          {/* Destination Filter */}
+          {selectedStop && (
+            <div className="mt-6 border-t pt-6">
+              <h3 className="text-lg font-medium mb-4">Destination Filter</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Filter bus departures by destination. Useful when your stop serves routes going in multiple directions.
+              </p>
+
+              {/* Enable/Disable Toggle */}
+              <div className="mb-4">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={!!config.transport?.destinationFilter}
+                    onChange={(e) => {
+                      if (e.currentTarget.checked) {
+                        updateField('transport', 'destinationFilter', {
+                          mode: 'whitelist',
+                          destinations: [],
+                        });
+                      } else {
+                        updateField('transport', 'destinationFilter', undefined);
+                      }
+                    }}
+                    className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Enable destination filtering</span>
+                </label>
+              </div>
+
+              {config.transport?.destinationFilter && (
+                <div className="space-y-4 pl-6">
+                  {/* Filter Mode */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Filter Mode</label>
+                    <div className="space-y-2">
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          checked={config.transport.destinationFilter.mode === 'whitelist'}
+                          onChange={() => {
+                            if (config.transport?.destinationFilter) {
+                              updateField('transport', 'destinationFilter', {
+                                ...config.transport.destinationFilter,
+                                mode: 'whitelist',
+                              });
+                            }
+                          }}
+                          className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">
+                          <strong>Whitelist</strong> - Only show these destinations
+                        </span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          checked={config.transport.destinationFilter.mode === 'blacklist'}
+                          onChange={() => {
+                            if (config.transport?.destinationFilter) {
+                              updateField('transport', 'destinationFilter', {
+                                ...config.transport.destinationFilter,
+                                mode: 'blacklist',
+                              });
+                            }
+                          }}
+                          className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">
+                          <strong>Blacklist</strong> - Hide these destinations
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Destinations List */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Destinations (one per line)
+                    </label>
+                    <textarea
+                      value={config.transport.destinationFilter.destinations.join('\n')}
+                      onChange={(e) => {
+                        if (config.transport?.destinationFilter) {
+                          const destinations = e.currentTarget.value
+                            .split('\n')
+                            .map(d => d.trim())
+                            .filter(d => d.length > 0);
+                          updateField('transport', 'destinationFilter', {
+                            ...config.transport.destinationFilter,
+                            destinations,
+                          });
+                        }
+                      }}
+                      rows={5}
+                      placeholder="Strindheim&#10;Sentrum&#10;Lerkendal"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Matching is case-insensitive and uses substring matching (e.g., "Sentrum" matches "Trondheim Sentrum")
+                    </p>
+                  </div>
+
+                  {/* Current destinations count */}
+                  {config.transport.destinationFilter.destinations.length > 0 && (
+                    <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                      <p className="text-sm text-blue-800">
+                        {config.transport.destinationFilter.mode === 'whitelist' ? '✓' : '✗'}{' '}
+                        {config.transport.destinationFilter.mode === 'whitelist' ? 'Showing only' : 'Hiding'}{' '}
+                        departures to:{' '}
+                        <strong>{config.transport.destinationFilter.destinations.join(', ')}</strong>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* API Keys Section */}

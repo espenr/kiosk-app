@@ -29,6 +29,12 @@ export interface KioskConfig {
     calendars: CalendarSource[];
     configured?: boolean; // Whether service account is configured (from public config)
   };
+  transport?: {
+    destinationFilter?: {
+      mode: 'whitelist' | 'blacklist';
+      destinations: string[]; // Destination names to filter (case-insensitive substring match)
+    };
+  };
   lastModified?: number; // Unix timestamp (ms) for conflict detection
 }
 
@@ -67,6 +73,12 @@ const defaultConfig: KioskConfig = {
     calendars: [],
     configured: false,
   },
+  transport: {
+    destinationFilter: {
+      mode: 'whitelist',
+      destinations: ['Strindheim'], // Only show buses heading towards city center
+    },
+  },
 };
 
 interface ConfigContextType {
@@ -77,6 +89,7 @@ interface ConfigContextType {
   updateElectricity: (electricity: Partial<KioskConfig['electricity']>) => void;
   updatePhotos: (photos: Partial<KioskConfig['photos']>) => void;
   updateCalendar: (calendar: Partial<KioskConfig['calendar']>) => void;
+  updateTransport: (transport: Partial<KioskConfig['transport']>) => void;
   isConfigured: boolean;
   isServerBacked: boolean;
   syncWithServer: () => Promise<void>;
@@ -91,6 +104,7 @@ const ConfigContext = createContext<ConfigContextType>({
   updateElectricity: () => {},
   updatePhotos: () => {},
   updateCalendar: () => {},
+  updateTransport: () => {},
   isConfigured: false,
   isServerBacked: false,
   syncWithServer: async () => {},
@@ -129,6 +143,10 @@ function mergeWithDefaults(stored: Partial<KioskConfig>): KioskConfig {
       ...(stored.calendar ? removeUndefined(stored.calendar) : {}),
       // Preserve calendars array from storage (don't merge with empty default)
       calendars: stored.calendar?.calendars || defaultConfig.calendar.calendars,
+    },
+    transport: {
+      ...defaultConfig.transport,
+      ...(stored.transport ? removeUndefined(stored.transport) : {}),
     },
   };
 
@@ -359,6 +377,13 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const updateTransport = (transport: Partial<KioskConfig['transport']>) => {
+    setConfig(prev => ({
+      ...prev,
+      transport: { ...prev.transport, ...transport },
+    }));
+  };
+
   // Sync config from server (respects dirty flag to avoid overwriting user edits)
   const syncWithServer = async () => {
     // Block sync during user editing to prevent race conditions
@@ -417,6 +442,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
         updateElectricity,
         updatePhotos,
         updateCalendar,
+        updateTransport,
         isConfigured,
         isServerBacked,
         syncWithServer,

@@ -197,9 +197,9 @@ function getHourlyForecast(timeseries: MetNoTimeseries[]): HourlyForecast[] {
   const hourly: HourlyForecast[] = [];
   const now = new Date();
 
-  // We want 4 points: +2h, +4h, +6h, +8h
+  // We want 5 points: +2h, +4h, +6h, +8h, +10h
   // Met.no provides hourly data, so we look for entries closest to these times
-  const targetHours = [2, 4, 6, 8];
+  const targetHours = [2, 4, 6, 8, 10];
 
   for (const targetOffset of targetHours) {
     const targetTime = new Date(now.getTime() + targetOffset * 60 * 60 * 1000);
