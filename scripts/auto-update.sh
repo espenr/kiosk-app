@@ -114,6 +114,19 @@ cleanup_old_versions() {
 restart_services() {
     log "Restarting kiosk services..."
 
+    # Restart backend Node.js server
+    if pgrep -f "node.*server/dist/index.js" > /dev/null; then
+        log "Stopping backend server..."
+        pkill -f "node.*server/dist/index.js" || true
+        sleep 2
+    fi
+
+    log "Starting backend server..."
+    cd "$KIOSK_DIR/server"
+    nohup node dist/index.js > /tmp/kiosk-backend.log 2>&1 &
+    sleep 1
+    log "Backend server restarted"
+
     # Restart photo server if running
     if systemctl is-active --quiet kiosk-photos; then
         sudo systemctl restart kiosk-photos
