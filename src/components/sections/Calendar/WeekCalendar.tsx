@@ -3,8 +3,7 @@ import { getEventsForDay, formatEventTime, CalendarEvent } from '../../../servic
 
 /**
  * Week calendar showing 7 days with events from multiple family calendars
- * Each family member has their own color and optional icon
- * Verbose display with time and full event titles
+ * New design: Month on left, dates across top, compact event cards
  */
 export function WeekCalendar() {
   const { events, isLoading, error, isConfigured } = useCalendar();
@@ -40,8 +39,9 @@ export function WeekCalendar() {
   }
 
   return (
-    <div className="h-full w-full px-3 py-2 flex flex-col">
-      <div className="grid grid-cols-7 gap-2 flex-1 min-h-0">
+    <div className="h-full w-full px-2 py-2">
+      {/* Calendar grid - full width */}
+      <div className="h-full grid grid-cols-7 gap-2">
         {days.map((day) => (
           <DayColumn
             key={day.date.toISOString()}
@@ -88,39 +88,40 @@ interface DayColumnProps {
 }
 
 function DayColumn({ day, events }: DayColumnProps) {
+  // Sort events: all-day events first, then by start time
+  const sortedEvents = [...events].sort((a, b) => {
+    // All-day events always come first
+    if (a.isAllDay && !b.isAllDay) return -1;
+    if (!a.isAllDay && b.isAllDay) return 1;
+
+    // Both all-day or both timed: sort by start time
+    return a.start.getTime() - b.start.getTime();
+  });
+
   return (
-    <div className="flex flex-col min-h-0 bg-black/40 rounded backdrop-blur-sm">
-      {/* Day header */}
-      <div
-        className={`text-center py-1 border-b border-gray-600/30 ${
-          day.isToday ? 'bg-blue-900/50 rounded-t' : ''
-        }`}
-      >
-        <div
-          className={`font-semibold ${
-            day.isToday ? 'text-blue-400' : 'text-gray-400'
-          }`}
-          style={{ fontSize: '1.1rem' }}
-        >
-          {day.dayName}
+    <div className="flex flex-col min-h-0">
+      {/* Day header with backdrop */}
+      <div className="bg-gray-800/60 backdrop-blur-sm rounded-t px-2 py-1.5 mb-2">
+        {/* Day name */}
+        <div className="text-center mb-0.5">
+          <div className="text-white font-normal" style={{ fontSize: '1.3rem' }}>
+            {day.dayName}
+          </div>
         </div>
-        <div
-          className={`font-bold leading-tight ${
-            day.isToday ? 'text-blue-300' : 'text-gray-200'
-          }`}
-          style={{ fontSize: '1.6rem' }}
-        >
-          {day.dayNumber}
+
+        {/* Date number */}
+        <div className="text-center flex justify-center">
+          <span className="text-gray-300 font-light" style={{ fontSize: '2.2rem', lineHeight: '1' }}>
+            {day.dayNumber}
+          </span>
         </div>
       </div>
 
-      {/* Events list - scrollable with more space */}
-      <div className="flex-1 pt-1 overflow-y-auto space-y-1">
-        {events.length === 0 ? (
-          <div className="text-xs text-gray-600 text-center py-2">-</div>
-        ) : (
-          events.map((event) => <EventItem key={event.id} event={event} />)
-        )}
+      {/* Events list */}
+      <div className="flex-1 overflow-y-auto space-y-1 px-0.5">
+        {sortedEvents.map((event) => (
+          <EventItem key={event.id} event={event} />
+        ))}
       </div>
     </div>
   );
@@ -132,25 +133,62 @@ interface EventItemProps {
 
 function EventItem({ event }: EventItemProps) {
   const color = event.calendarColor;
+  const icon = getCalendarIcon(event.calendarIcon);
 
   return (
     <div
-      className="p-2 rounded shadow-lg"
+      className="px-1.5 py-1 rounded"
       style={{
-        backgroundColor: `${color}80`,
-        borderLeft: `3px solid ${color}`,
+        backgroundColor: color,
       }}
     >
-      {/* Time row */}
+      {/* Icon + Time + Title on same line */}
+      <div className="flex items-start gap-1 text-white leading-tight">
+        {icon && (
+          <span className="flex-shrink-0" style={{ fontSize: '0.65rem' }}>
+            {icon}
+          </span>
+        )}
+        <div className="flex-1 min-w-0">
+          <span className="font-normal" style={{ fontSize: '0.7rem' }}>
+            {!event.isAllDay && `${formatEventTime(event.start)} `}
+            <span style={{ fontSize: '0.75rem' }}>{event.title}</span>
+          </span>
+        </div>
+      </div>
+
+      {/* End time with arrow */}
       {!event.isAllDay && (
-        <div className="text-white font-semibold drop-shadow-md" style={{ fontSize: '0.8rem' }}>
-          {formatEventTime(event.start)}
+        <div className="text-white ml-4" style={{ fontSize: '0.65rem', opacity: 0.85, marginTop: '1px' }}>
+          → {formatEventTime(event.end)}
         </div>
       )}
-      {/* Title */}
-      <div className="text-white font-bold leading-snug break-words drop-shadow-md" style={{ fontSize: '1.0rem' }}>
-        {event.title}
-      </div>
     </div>
   );
+}
+
+/**
+ * Map calendar icon identifier to emoji
+ * Common patterns: person, trophy, family, etc.
+ */
+function getCalendarIcon(iconName?: string): string | null {
+  if (!iconName) return null;
+
+  const iconMap: Record<string, string> = {
+    person: '👤',
+    user: '👤',
+    profile: '👤',
+    trophy: '🏆',
+    award: '🏆',
+    family: '👨‍👩‍👧‍👦',
+    home: '🏠',
+    work: '💼',
+    school: '🎓',
+    sports: '⚽',
+    music: '🎵',
+    food: '🍽️',
+    medical: '⚕️',
+  };
+
+  return iconMap[iconName.toLowerCase()] || '📅';
 }

@@ -106,19 +106,27 @@ export function Electricity() {
 
               return (
                 <div key={i} className="flex-1 flex flex-col items-center min-w-0">
-                  {/* Price above bar */}
-                  <div className="text-gray-400 truncate" style={{ fontSize: '0.7rem' }}>
-                    {formatPrice(price.total).replace('.', ',')}
-                  </div>
-                  {/* Bar */}
-                  <div className="flex-1 w-full flex items-end">
+                  {/* Bar area with price overlay */}
+                  <div className="flex-1 w-full relative flex items-end">
+                    {/* Colored bar (bottom-aligned) */}
                     <div
                       className={`w-full rounded-t ${getPriceLevelBgClass(price.level)} ${
                         isCurrentHour ? 'ring-1 ring-white' : ''
                       }`}
                       style={{ height: `${heightPercent}%` }}
                     />
+
+                    {/* Price label (absolute positioned at bottom) */}
+                    <div className="absolute bottom-1 left-0 right-0 text-center">
+                      <div
+                        className={`text-black truncate ${isCurrentHour ? 'font-bold' : ''}`}
+                        style={{ fontSize: '0.7rem' }}
+                      >
+                        {formatPrice(price.total).replace('.', ',')}
+                      </div>
+                    </div>
                   </div>
+
                   {/* Time below bar */}
                   <div className={isCurrentHour ? 'text-white font-bold' : 'text-gray-500'} style={{ fontSize: '0.7rem' }}>
                     {hour}
@@ -128,15 +136,22 @@ export function Electricity() {
             })
           : // Placeholder bars when loading
             Array.from({ length: 24 }).map((_, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center">
-                <div className="text-[8px] text-gray-600">--</div>
-                <div className="flex-1 w-full flex items-end">
+              <div key={i} className="flex-1 flex flex-col items-center min-w-0">
+                <div className="flex-1 w-full relative flex items-end">
                   <div
                     className="w-full bg-gray-700 rounded-t animate-pulse"
                     style={{ height: `${30 + (i % 5) * 10}%` }}
                   />
+                  <div className="absolute bottom-1 left-0 right-0 text-center">
+                    <div
+                      className="text-gray-600 truncate"
+                      style={{ fontSize: '0.7rem' }}
+                    >
+                      --
+                    </div>
+                  </div>
                 </div>
-                <div className="text-[8px] text-gray-600">{i}</div>
+                <div className="text-gray-600" style={{ fontSize: '0.7rem' }}>{i}</div>
               </div>
             ))}
       </div>
