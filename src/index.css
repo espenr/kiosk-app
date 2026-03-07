@@ -25,6 +25,7 @@ html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
+  cursor: none;
 }
 
 #root {
@@ -38,6 +39,7 @@ html, body {
 /* Allow scrolling on admin pages */
 body.admin-page {
   overflow-y: auto;
+  cursor: auto;
 }
 
 body.admin-page #root {
