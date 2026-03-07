@@ -1,10 +1,10 @@
 # Deployment Guide - Raspberry Pi Kiosk
 
-This guide covers deploying the Kiosk Application to a Raspberry Pi Zero W 2.
+This guide covers deploying the Kiosk Application to a Raspberry Pi 2 Model B.
 
 ## Prerequisites
 
-- Raspberry Pi Zero W 2 with Raspberry Pi OS Lite installed
+- Raspberry Pi 2 Model B with Raspberry Pi OS Lite installed
 - SSH access configured
 - Network connectivity
 - NGINX installed
@@ -13,7 +13,7 @@ This guide covers deploying the Kiosk Application to a Raspberry Pi Zero W 2.
 
 ```
 ┌─────────────────────────────────────┐
-│    Raspberry Pi Zero W 2 (512MB)   │
+│    Raspberry Pi 2 Model B (1GB)     │
 ├─────────────────────────────────────┤
 │  NGINX (serve static files)         │ ~10MB RAM
 │  Node.js (photo proxy)              │ ~30MB RAM
@@ -186,7 +186,7 @@ Add the following content with **optimized flags for Pi Zero W 2**:
 - `--disable-infobars` - Hide information bars
 - `--disable-session-crashed-bubble` - No crash notifications
 
-**Memory Optimizations (Critical for 512MB):**
+**Memory Optimizations:**
 - `--memory-pressure-off` - Disable memory pressure monitoring
 - `--js-flags="--max-old-space-size=256"` - Limit V8 heap to 256MB
 - `--disable-gpu` - Disable GPU compositing (save memory)
@@ -194,7 +194,7 @@ Add the following content with **optimized flags for Pi Zero W 2**:
 - `--disable-dev-shm-usage` - Use /tmp instead of /dev/shm (limited on Pi)
 
 **Security/Sandbox:**
-- `--no-sandbox` - Disable sandboxing (saves memory, needed on Pi Zero)
+- `--no-sandbox` - Disable sandboxing (saves memory)
 - `--disable-setuid-sandbox` - Disable SUID sandbox
 
 **UI Features:**

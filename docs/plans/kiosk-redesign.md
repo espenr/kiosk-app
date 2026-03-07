@@ -213,7 +213,7 @@ interface KioskConfig {
 ### Phase 7: Settings & Polish
 1. Minimal settings panel (API keys, album URL)
 2. Error states and offline handling
-3. Performance optimization for Pi Zero
+3. Performance optimization for Pi 2 Model B
 
 ---
 
@@ -261,7 +261,7 @@ After implementation, verify:
 6. **Electricity:** Current price shows, chart renders 24h data
 7. **Transport:** Next departures show, refresh every minute
 8. **Settings:** Can configure Tibber token and album URL
-9. **Pi Zero:** Bundle stays under 100KB, runs smoothly
+9. **Pi 2 Model B:** Bundle stays under 100KB, runs smoothly
 
 **Test commands:**
 ```bash

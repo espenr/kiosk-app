@@ -1,6 +1,6 @@
 # Kiosk App
 
-A full-screen dashboard application for Raspberry Pi Zero W 2, displaying widgets like clock, weather, calendar, photos, and public transport information.
+A full-screen dashboard application for Raspberry Pi 2 Model B, displaying widgets like clock, weather, calendar, photos, and public transport information.
 
 ## Prerequisites
 
@@ -45,7 +45,7 @@ This checks SSH connectivity (mDNS then static IP), verifies tools are installed
 - **State:** React Context API + localStorage persistence
 - **Testing:** Puppeteer
 - **Bundle:** ~66 KB total (13 KB CSS + 53 KB JS)
-- **Target:** Raspberry Pi Zero W 2 (512MB RAM)
+- **Target:** Raspberry Pi 2 Model B (1GB RAM, quad-core ARMv7)
 
 ## Deployment
 
@@ -74,7 +74,7 @@ npm run deploy  # Build and rsync to Pi
 
 | Property | Value |
 |----------|-------|
-| Device | Raspberry Pi Zero W 2 |
+| Device | Raspberry Pi 2 Model B |
 | OS | Raspberry Pi OS |
 | IP | 192.168.50.37 |
 | mDNS | pi.local |
@@ -171,7 +171,7 @@ If SSH isn't set up yet, run `bash scripts/setup-deploy.sh` for guided setup.
 
 ### USB Gadget Mode (alternative to WiFi)
 
-The Pi Zero W 2 can be accessed over a USB cable using USB gadget mode, useful when WiFi isn't available.
+**Note:** USB gadget mode is only available on Pi Zero models. The Pi 2 Model B uses standard Ethernet and WiFi connectivity.
 
 **On the Pi** (one-time setup):
 

@@ -105,14 +105,14 @@ Currently, the app does not use automated unit/integration tests. The focus is o
 
 1. **TypeScript type checking** - Catches type errors at compile time
 2. **ESLint** - Enforces code quality and consistency
-3. **Manual testing** - Verifies functionality on target device (Pi Zero W 2)
+3. **Manual testing** - Verifies functionality on target device (Pi 2 Model B)
 
 ### Why No Automated Browser Tests?
 
 The previous widget-based architecture used Puppeteer for automated testing. The current fixed-layout architecture is simpler and more stable:
 
 - **Fixed layout** - No dynamic widget positioning to test
-- **Target device specific** - 768x1366 portrait display on Pi Zero W 2
+- **Target device specific** - 1080x1920 portrait display on Pi 2 Model B
 - **API-driven** - Data from external APIs (harder to mock reliably)
 - **Visual verification needed** - Many issues are visual (layout, styling)
 

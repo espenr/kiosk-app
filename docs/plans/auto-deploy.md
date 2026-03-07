@@ -40,7 +40,7 @@ Developer                 GitHub                      Raspberry Pi
 ## Why This Approach
 
 - **No internet exposure**: Pi initiates all connections, no port forwarding needed
-- **No build on Pi**: Pi Zero W 2 (512MB RAM) is slow for npm/tsc builds
+- **No build on Pi**: Pi 2 Model B (1GB RAM) is slow for npm/tsc builds
 - **Atomic deploys**: Symlink swap prevents partial deployments
 - **Rollback support**: Keeps 3 versions, auto-rollback on health check failure
 

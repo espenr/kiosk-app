@@ -158,7 +158,7 @@ server {
 }
 ```
 
-## Memory Estimate (Pi Zero W 2 - 512MB)
+## Memory Estimate (Pi 2 Model B - 1GB)
 
 | Component | RAM |
 |-----------|-----|

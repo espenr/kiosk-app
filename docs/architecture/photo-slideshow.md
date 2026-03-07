@@ -85,7 +85,7 @@ The photo slideshow uses a dual-layer rendering approach to preserve full image 
 **Key Benefits:**
 - **No cropping**: Every photo displays in full, preserving composition
 - **Visual continuity**: Blurred background fills empty space naturally
-- **Performance**: GPU-accelerated blur (12px) optimized for Raspberry Pi Zero W 2
+- **Performance**: GPU-accelerated blur (12px) optimized for Raspberry Pi 2 Model B
 - **Native optimization**: Browser-native image scaling and decoding for better quality
 - **Animations intact**: Crossfade transitions apply to both layers uniformly
 
@@ -251,7 +251,7 @@ flowchart TB
         A -->|Vite proxy /api/*| B
     end
 
-    subgraph "Raspberry Pi Zero W 2"
+    subgraph "Raspberry Pi 2 Model B"
         C[Nginx :80]
         D[Node.js :3001]
         E[systemd]
@@ -266,7 +266,7 @@ flowchart TB
 
 ### Memory Footprint
 
-The Pi Zero W 2 has 512MB RAM. The photo server is designed for minimal memory usage:
+The Pi 2 Model B has 1GB RAM. The photo server is designed for minimal memory usage:
 
 | Component | RAM Usage |
 |-----------|-----------|

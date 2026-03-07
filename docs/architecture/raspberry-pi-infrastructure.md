@@ -2,18 +2,18 @@
 
 ## Overview
 
-The kiosk application runs on a Raspberry Pi Zero W 2 configured as a dedicated display appliance. This document covers infrastructure setup, service management, deployment procedures, and operational runbooks.
+The kiosk application runs on a Raspberry Pi 2 Model B configured as a dedicated display appliance. This document covers infrastructure setup, service management, deployment procedures, and operational runbooks.
 
 ## Hardware Specifications
 
 | Component | Specification |
 |-----------|---------------|
-| Model | Raspberry Pi Zero W 2 |
-| CPU | BCM2710A1, Quad-core ARM Cortex-A53 @ 1GHz |
-| RAM | 512 MB LPDDR2 |
+| Model | Raspberry Pi 2 Model B Rev 1.1 |
+| CPU | BCM2835, Quad-core ARM Cortex-A7 @ 900MHz |
+| RAM | 1 GB LPDDR2 |
 | Storage | 64 GB microSD |
 | Network | 2.4GHz 802.11 b/g/n Wi-Fi |
-| Display | 32" TV via mini-HDMI (768x1366 portrait) |
+| Display | 32" TV via mini-HDMI (1080x1920 portrait) |
 
 ## System Configuration
 

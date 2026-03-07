@@ -24,7 +24,7 @@ Migrate all components from Chakra UI to Tailwind CSS to eliminate runtime style
 - Static CSS compilation (Tailwind purges unused styles)
 - Faster initial page load
 - Reduced JavaScript execution time
-- Smaller memory footprint on Raspberry Pi Zero W 2
+- Smaller memory footprint on Raspberry Pi 2 Model B
 
 ## Components Migrated
 
@@ -126,7 +126,7 @@ According to the Phase 2 Optimization Plan:
 ### Immediate (Optional)
 - Re-enable Tailwind preflight after confirming no conflicts
 - Test application functionality thoroughly
-- Deploy to Raspberry Pi Zero W 2 for real-world testing
+- Deploy to Raspberry Pi 2 Model B for real-world testing
 
 ### Session 3: Lazy Loading Widgets
 - Implement dynamic imports for widget components
@@ -167,6 +167,6 @@ According to the Phase 2 Optimization Plan:
 
 ## Conclusion
 
-Session 2 was highly successful, achieving an 82.5% bundle size reduction (far exceeding the 40-50% target). The application is now using Tailwind CSS exclusively, with all runtime CSS-in-JS overhead eliminated. The codebase is cleaner, the bundle is smaller, and the app is better optimized for the resource-constrained Raspberry Pi Zero W 2.
+Session 2 was highly successful, achieving an 82.5% bundle size reduction (far exceeding the 40-50% target). The application is now using Tailwind CSS exclusively, with all runtime CSS-in-JS overhead eliminated. The codebase is cleaner, the bundle is smaller, and the app is better optimized for the resource-constrained Raspberry Pi 2 Model B.
 
 **Phase 2 Session 2: Complete ✅**

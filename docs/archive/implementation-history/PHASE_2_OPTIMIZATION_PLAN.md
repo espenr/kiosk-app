@@ -343,7 +343,7 @@ public/icon-512.png          - App icon 512x512
 - Test offline mode (disconnect network)
 - Verify API caching works
 - Check cache invalidation
-- Test on actual Pi Zero W 2
+- Test on actual Pi 2 Model B
 
 **Estimated Time**: 2-3 hours
 **Risk**: Medium
@@ -415,7 +415,7 @@ Status:            🎉 FAR EXCEEDED TARGET
 - ✅ Offline support (service worker)
 - ✅ Reduced memory usage (lighter framework)
 
-### Memory on Pi Zero W 2
+### Memory on Pi 2 Model B
 ```
 Current:  ~310MB used, ~200MB free
 Target:   ~280MB used, ~230MB free
@@ -455,7 +455,7 @@ After each optimization:
 - [ ] No console errors
 - [ ] Bundle size reduced as expected
 
-Final integration test on Pi Zero W 2:
+Final integration test on Pi 2 Model B:
 - [ ] Deploy to Pi
 - [ ] App loads within 3 seconds
 - [ ] Memory usage under 300MB
@@ -470,6 +470,6 @@ Final integration test on Pi Zero W 2:
 1. **Preferred approach?** Sequential, Parallel, or Hybrid?
 2. **Keep Chakra UI initially?** During Tailwind migration for safety?
 3. **Service Worker priority?** Critical or can wait?
-4. **Testing on Pi Zero W 2?** Can you test after each phase?
+4. **Testing on Pi 2 Model B?** Can you test after each phase?
 
 Let me know your preference and I'll proceed!

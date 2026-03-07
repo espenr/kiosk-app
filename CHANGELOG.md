@@ -29,7 +29,7 @@ All notable changes to this project will be documented in this file.
 ### Bundle Impact
 - **Before**: 31.56 KB gzipped
 - **After**: 39.95 KB gzipped
-- **Increase**: +8.4 KB gzipped (~27% increase, acceptable for Pi Zero W 2)
+- **Increase**: +8.4 KB gzipped (~27% increase, acceptable for Pi 2 Model B)
 
 ### Benefits
 - **Consistent rendering**: Identical icon appearance on macOS development and Raspberry Pi production

@@ -6,7 +6,7 @@ The kiosk dashboard displays five data-driven widgets, each following a consiste
 
 ```mermaid
 flowchart TB
-    subgraph "Dashboard Layout (768x1366px)"
+    subgraph "Dashboard Layout (1080x1920px)"
         direction TB
         A["Header - 10%<br/>Clock, Date, Weather"]
         B["Photo + Calendar - 72%<br/>Slideshow with event overlay"]

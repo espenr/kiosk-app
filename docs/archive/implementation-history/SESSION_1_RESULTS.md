@@ -122,7 +122,7 @@ src/components/theme/ThemeWrapper.tsx - Disabled Chakra motion
 ### When Ready
 1. Test locally with `npm run dev`
 2. Build with `npm run build`
-3. Deploy to Pi Zero W 2 with `npm run deploy`
+3. Deploy to Pi 2 Model B with `npm run deploy`
 4. Monitor memory usage on Pi
 5. Verify animations still work
 

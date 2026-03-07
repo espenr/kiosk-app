@@ -31,7 +31,7 @@ Add a secure administrative interface to the kiosk app, accessible via browser f
 | First-time setup | Display code on TV | No keyboard needed, proves physical access |
 | PIN recovery | SSH reset command | Secure, requires Pi access |
 | Admin routing | Single SPA with preact-router | Keep bundle simple, reuse existing patterns |
-| Backend framework | Keep native HTTP | Memory efficient for Pi Zero |
+| Backend framework | Keep native HTTP | Memory efficient for Pi 2 Model B |
 
 ## User Flows
 

@@ -47,7 +47,7 @@ ssh pi@pi.local 'DISPLAY=:0 scrot /tmp/screen.png' && scp pi@pi.local:/tmp/scree
 - **State:** React Context API + localStorage
 - **Testing:** Puppeteer for browser automation
 - **Build:** Vite with Preact alias, path alias '@' -> 'src'
-- **Target Device:** Raspberry Pi Zero W 2 (512MB RAM)
+- **Target Device:** Raspberry Pi 2 Model B (1GB RAM, quad-core ARMv7)
 - **Bundle Size:** ~66 KB (13 KB CSS + 53 KB JS)
 
 ## Deployment Architecture
@@ -118,7 +118,7 @@ The app uses **official Met.no weather icons** and **Lucide React** for UI eleme
 - SVG icons ensure pixel-perfect consistency across all platforms
 - Professional appearance matching official Yr.no website design
 
-**Bundle impact**: +8.4 KB gzipped (39.95 KB total, acceptable for Pi Zero W 2)
+**Bundle impact**: +8.4 KB gzipped (39.95 KB total, acceptable for Pi 2 Model B)
 
 ## Photo Slideshow Backend Proxy
 
@@ -225,7 +225,7 @@ This ensures CI will pass. Both commands must succeed with zero errors/warnings.
 See full implementation plan: [`/docs/plans/kiosk-redesign.md`](./docs/plans/kiosk-redesign.md)
 
 ### Summary
-- **Target:** 32" TV in portrait orientation (768x1366px)
+- **Target:** 32" TV in portrait orientation (1080x1920px)
 - **Layout:** Fixed vertical sections (Header 10%, Photo+Calendar 72%, Electricity 8%, Transport 10%)
 - **APIs:** Met.no (weather), Google Calendar, Tibber (electricity), Entur (transport), iCloud Shared Album
 

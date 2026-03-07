@@ -62,7 +62,7 @@ flowchart TB
 | Backend | Node.js (native HTTP) |
 | Web Server | Nginx |
 | Process Manager | systemd |
-| Hardware | Raspberry Pi Zero W 2 |
+| Hardware | Raspberry Pi 2 Model B |
 
 ## Key Design Decisions
 
@@ -82,7 +82,7 @@ flowchart TB
 
 - **Why**: Persist cache across component remounts
 - **Trade-off**: Memory not freed on unmount
-- **Mitigation**: Reasonable TTLs, Pi has 512MB RAM
+- **Mitigation**: Reasonable TTLs, Pi has 1GB RAM
 
 ### 4. Norwegian Localization
 
