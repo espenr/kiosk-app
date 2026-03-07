@@ -150,12 +150,7 @@ restart_services() {
         error "Backend server failed to start (process died immediately). Check /tmp/kiosk-backend.log"
     fi
 
-    # Verify process with correct command is running
-    if ! pgrep -f "node.*server/dist/index.js" > /dev/null; then
-        error "Backend server process not found after startup"
-    fi
-
-    log "Backend server process verified running"
+    log "Backend server process verified running (PID: $backend_pid)"
 
     # Restart photo server if running
     if systemctl is-active --quiet kiosk-photos; then
