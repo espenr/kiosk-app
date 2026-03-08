@@ -1,7 +1,8 @@
-import { createContext, ReactNode, useContext, useState, useEffect, useRef } from 'react';
+import { createContext, ReactNode, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { STORAGE_KEYS, loadFromStorage, saveToStorage } from '../utils/storage';
 import { getConfig, getPublicConfig, autoSaveConfig } from '../services/auth';
 import { invalidateCalendarCache } from '../hooks/useCalendar';
+import { useConfigUpdates } from '../hooks/useConfigUpdates';
 
 // Kiosk configuration for API integrations and settings
 export interface KioskConfig {
@@ -178,6 +179,101 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
   const [isServerBacked, setIsServerBacked] = useState(false);
   const [isDirty, setIsDirty] = useState(false); // Blocks auto-save during user editing
   const autoSaveTimeoutRef = useRef<number | null>(null);
+  const isServerUpdateRef = useRef(false); // Prevents auto-save loop from server updates
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+
+  // Track route changes for SSE enablement
+  useEffect(() => {
+    const handleLocationChange = () => {
+      setCurrentPath(window.location.pathname);
+    };
+
+    // Listen for popstate (browser back/forward buttons)
+    window.addEventListener('popstate', handleLocationChange);
+
+    // Listen for pushState/replaceState (programmatic navigation)
+    const originalPushState = window.history.pushState;
+    const originalReplaceState = window.history.replaceState;
+
+    window.history.pushState = function (...args) {
+      originalPushState.apply(this, args);
+      handleLocationChange();
+    };
+
+    window.history.replaceState = function (...args) {
+      originalReplaceState.apply(this, args);
+      handleLocationChange();
+    };
+
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      window.history.pushState = originalPushState;
+      window.history.replaceState = originalReplaceState;
+    };
+  }, []);
+
+  // Determine if we're on a dashboard route (not admin)
+  const isAdminRoute = useMemo(() => currentPath.startsWith('/admin'), [currentPath]);
+
+  // Handle SSE config update notifications
+  const handleConfigUpdate = useCallback(async (serverTimestamp: number) => {
+    const currentTimestamp = config.lastModified || 0;
+
+    // Only update if server timestamp is newer
+    if (serverTimestamp <= currentTimestamp) {
+      console.log('[ConfigContext] Ignoring stale SSE update', {
+        current: currentTimestamp,
+        server: serverTimestamp,
+      });
+      return;
+    }
+
+    console.log('[ConfigContext] Config updated on server, reloading via SSE', {
+      current: currentTimestamp,
+      server: serverTimestamp,
+    });
+
+    try {
+      const publicConfig = await getPublicConfig();
+      const stored = loadFromStorage<Partial<KioskConfig>>(STORAGE_KEYS.CONFIG, {});
+
+      // Ensure server calendar data overrides localStorage
+      const mergeInput = {
+        ...stored,
+        ...publicConfig,
+        calendar: publicConfig.calendar || stored.calendar || defaultConfig.calendar,
+      };
+
+      const merged = mergeWithDefaults(mergeInput);
+
+      // Mark this as a server update to prevent auto-save loop
+      // Flag will be reset by auto-save useEffect when it sees this update
+      isServerUpdateRef.current = true;
+      setConfig(merged);
+
+      // Invalidate calendar cache to force re-fetch with new credentials
+      invalidateCalendarCache();
+    } catch (err) {
+      console.error('[ConfigContext] Failed to reload config after SSE update:', err);
+    }
+  }, [config.lastModified]);
+
+  // Enable SSE only on dashboard routes (not admin)
+  const sseEnabled = !isAdminRoute && isServerBacked;
+
+  useEffect(() => {
+    console.log('[ConfigContext] SSE status:', {
+      enabled: sseEnabled,
+      isAdminRoute,
+      isServerBacked,
+      currentPath,
+    });
+  }, [sseEnabled, isAdminRoute, isServerBacked, currentPath]);
+
+  useConfigUpdates({
+    onUpdate: handleConfigUpdate,
+    enabled: sseEnabled,
+  });
 
   // Try to load from server on mount
   useEffect(() => {
@@ -194,6 +290,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
         try {
           const serverConfig = await getConfig();
           console.log('[ConfigContext] Loaded config from server (authenticated)');
+          isServerUpdateRef.current = true; // Prevent auto-save on initial load
           setConfig(serverConfig);
           setIsServerBacked(true);
           return; // Success, no need for fallback
@@ -243,8 +340,15 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
           // Note: Migration will happen when user next saves in admin view
         }
 
+        // Mark this as a server update to prevent auto-save loop
+        isServerUpdateRef.current = true;
         setConfig(merged);
         setIsServerBacked(true);
+
+        // Reset flag after state update
+        setTimeout(() => {
+          isServerUpdateRef.current = false;
+        }, 100);
       } catch {
         // Server not available - fall back to localStorage
         console.log('[ConfigContext] Server unavailable, using localStorage fallback');
@@ -292,6 +396,10 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
           };
 
           const merged = mergeWithDefaults(mergeInput);
+
+          // Mark this as a server update to prevent auto-save loop
+          // Flag will be reset by auto-save useEffect when it sees this update
+          isServerUpdateRef.current = true;
           setConfig(merged);
 
           // Invalidate calendar cache to force re-fetch with new credentials
@@ -315,6 +423,17 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
 
   // Auto-save to server when config changes (debounced, respects dirty flag)
   useEffect(() => {
+    // Skip if this config change came from a server update (SSE or polling)
+    if (isServerUpdateRef.current) {
+      isServerUpdateRef.current = false; // Reset flag for next change
+      return;
+    }
+
+    // Only auto-save in admin view, not on dashboard
+    if (!isAdminRoute) {
+      return;
+    }
+
     // Only auto-save if server-backed, not during user editing, and not on initial mount
     if (!isServerBacked || isDirty) {
       return;
@@ -338,6 +457,8 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
             timestamp: updatedConfig.lastModified,
           });
           // Update local config with server's timestamp
+          // Mark as server update to prevent auto-save loop
+          isServerUpdateRef.current = true;
           setConfig(updatedConfig);
         })
         .catch((err) => {
@@ -353,7 +474,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
         window.clearTimeout(autoSaveTimeoutRef.current);
       }
     };
-  }, [config, isServerBacked, isDirty]);
+  }, [config, isServerBacked, isDirty, isAdminRoute]);
 
   const updateConfig = (updates: Partial<KioskConfig>) => {
     setConfig(prev => ({ ...prev, ...updates }));
@@ -437,6 +558,8 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
       // Invalidate calendar cache when config changes
       invalidateCalendarCache();
 
+      // Mark as server update to prevent auto-save loop
+      isServerUpdateRef.current = true;
       setConfig(serverConfig);
       setIsServerBacked(true);
     } catch (err) {

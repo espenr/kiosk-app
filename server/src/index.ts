@@ -29,6 +29,7 @@ import {
 } from './handlers/config.js';
 import { loadPublicConfig, isSetupComplete } from './utils/storage.js';
 import { handleGetCalendarEvents } from './handlers/calendar.js';
+import { addSSEClient } from './utils/sse.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = parseInt(process.env.PORT || '3001', 10);
@@ -266,6 +267,12 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
   if (url === '/api/calendar/events' && req.method === 'GET') {
     await handleGetCalendarEvents(req, res);
     return;
+  }
+
+  // SSE route for real-time config updates
+  if (url === '/api/config/updates' && req.method === 'GET') {
+    addSSEClient(res);
+    return; // Keep connection open, don't call res.end()
   }
 
   // Photos routes

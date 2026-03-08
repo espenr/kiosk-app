@@ -10,6 +10,7 @@ import { loadAuthData, loadConfig, saveConfig, deleteConfigData, loadPublicConfi
 import { hashPin, encrypt, decrypt } from '../utils/crypto.js';
 import { getConfigFromSession, cacheConfigInSession } from '../utils/sessions.js';
 import { parseJsonBody, sendJson, requireAuth } from '../utils/http.js';
+import { broadcastConfigUpdate } from '../utils/sse.js';
 import type { UpdateConfigRequest, FactoryResetRequest, PublicConfig, KioskConfig } from '../types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -156,6 +157,9 @@ export async function handleAutoSaveConfig(req: IncomingMessage, res: ServerResp
 
     console.log('[Auto-save] Updated public and internal configs (encrypted config unchanged)');
 
+    // Broadcast update to all connected SSE clients
+    broadcastConfigUpdate(configWithTimestamp.lastModified);
+
     // Return updated config with timestamp
     sendJson(res, 200, configWithTimestamp, { allowOrigin: req.headers.origin, allowCredentials: true });
   } catch (err) {
@@ -197,14 +201,23 @@ export async function handleUpdateConfig(req: IncomingMessage, res: ServerRespon
       return;
     }
 
+    // Add timestamp for conflict detection
+    const configWithTimestamp = {
+      ...config,
+      lastModified: Date.now(),
+    };
+
     // Save encrypted config
-    saveConfig(config, pin);
+    saveConfig(configWithTimestamp, pin);
 
     // Also save calendar config to internal file for backend access
-    saveInternalCalendarConfig(config);
+    saveInternalCalendarConfig(configWithTimestamp);
 
     // Update session cache
-    cacheConfigInSession(sessionId, config);
+    cacheConfigInSession(sessionId, configWithTimestamp);
+
+    // Broadcast update to all connected SSE clients
+    broadcastConfigUpdate(configWithTimestamp.lastModified);
 
     sendJson(res, 200, { success: true }, { allowOrigin: req.headers.origin, allowCredentials: true });
   } catch (err) {

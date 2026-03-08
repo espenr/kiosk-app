@@ -192,6 +192,7 @@ export function savePublicConfig(config: KioskConfig): void {
       configured: Boolean(config.calendar.serviceAccountKey),
     },
     transport: config.transport,
+    lastModified: config.lastModified, // Include timestamp for SSE updates
   };
 
   const content = JSON.stringify(publicConfig, null, 2);

@@ -156,4 +156,5 @@ export interface PublicConfig {
       destinations: string[];
     };
   };
+  lastModified?: number; // Unix timestamp (ms) for SSE update detection
 }

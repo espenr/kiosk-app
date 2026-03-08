@@ -140,10 +140,11 @@ function EventItem({ event }: EventItemProps) {
       className="px-1.5 py-1 rounded"
       style={{
         backgroundColor: color,
+        opacity: 0.8,  // 20% transparent = 80% opacity
       }}
     >
       {/* Icon + Time + Title on same line */}
-      <div className="flex items-start gap-1 text-white leading-tight">
+      <div className="flex items-start gap-1 text-black leading-tight">
         {icon && (
           <span className="flex-shrink-0" style={{ fontSize: '0.65rem' }}>
             {icon}
@@ -159,7 +160,7 @@ function EventItem({ event }: EventItemProps) {
 
       {/* End time with arrow */}
       {!event.isAllDay && (
-        <div className="text-white ml-4" style={{ fontSize: '0.65rem', opacity: 0.85, marginTop: '1px' }}>
+        <div className="text-black ml-4" style={{ fontSize: '0.65rem', opacity: 0.85, marginTop: '1px' }}>
           → {formatEventTime(event.end)}
         </div>
       )}

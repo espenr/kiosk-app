@@ -397,6 +397,13 @@ A secure admin interface for configuring the kiosk from a phone/laptop on the lo
 - ✅ Settings management interface
 - ✅ Factory reset functionality
 - ✅ CLI tools for SSH recovery
+- ✅ Real-time config updates via Server-Sent Events (SSE)
+
+### Real-Time Config Updates
+
+Settings saved in admin view push instant updates to dashboard via Server-Sent Events (SSE). Dashboard reflects changes within 1-2 seconds without manual refresh. Automatic fallback to 10-second polling if SSE connection fails.
+
+Full documentation: [`docs/architecture/real-time-config-updates.md`](./docs/architecture/real-time-config-updates.md)
 
 ### Key Routes
 - `/admin/setup` - First-time configuration wizard

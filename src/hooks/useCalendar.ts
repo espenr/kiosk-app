@@ -44,6 +44,11 @@ export function useCalendar(): UseCalendarResult {
   const [isLoading, setIsLoading] = useState(!cachedEvents.length && isConfigured);
   const [error, setError] = useState<string | null>(null);
 
+  // Create a dependency key from calendar config to trigger refetch when colors/names change
+  const calendarConfigKey = JSON.stringify(
+    config.calendar.calendars.map(cal => ({ id: cal.id, color: cal.color, name: cal.name }))
+  );
+
   const fetchData = useCallback(
     async (force = false) => {
       // Check if configured
@@ -80,7 +85,8 @@ export function useCalendar(): UseCalendarResult {
         setIsLoading(false);
       }
     },
-    [isConfigured]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isConfigured, calendarConfigKey] // Refetch when calendar config changes
   );
 
   // Initial fetch
