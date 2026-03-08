@@ -38,11 +38,11 @@ export function DashboardLayout({
 
       {/* Photo + Calendar overlay - 74% */}
       <section className="h-[74%] flex-shrink-0 relative">
-        {/* Photo slideshow - full area */}
-        <div className="absolute inset-0 z-10">
+        {/* Photo slideshow - extends to cover calendar header */}
+        <div className="absolute top-0 left-0 right-0 h-[67%] z-10">
           {photoSlideshow}
         </div>
-        {/* Calendar overlay - transparent to show photo behind */}
+        {/* Calendar overlay - transparent to show photo behind header */}
         <div className="absolute bottom-0 left-0 right-0 h-[40%] z-20">
           {calendar}
         </div>
