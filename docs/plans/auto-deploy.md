@@ -64,7 +64,9 @@ Pi-side polling script that:
 - Installs server dependencies (`npm install --omit=dev`)
 - Preserves `.env` file
 - Performs atomic symlink swap
-- Restarts `kiosk-photos` and reloads `nginx`
+- Restarts `kiosk-photos` systemd service
+- **Waits for backend health check** (max 30s)
+- **Sends hard refresh to browser** (Ctrl+F5) only after backend ready
 - Runs health check, auto-rollback on failure
 - Cleans up old versions (keeps 3)
 
@@ -122,6 +124,107 @@ One-time Pi setup script that:
 5. **End-to-end**: Push change, wait ~5 min, verify live on Pi
 6. **Rollback test**: `/var/www/kiosk/scripts/auto-update.sh rollback`
 
+## Clean Start on Deployment
+
+**Problem**: Browser cache and localStorage can cause issues after deployment (stale data, version mismatches, cached errors).
+
+**Solution**: Automatic clean start on version changes
+
+### 1. Server-side: Browser Refresh After Health Check
+
+The auto-update script ensures the browser only loads new code when backend is ready:
+
+```bash
+# In scripts/auto-update.sh
+restart_services() {
+    sudo systemctl restart kiosk-photos  # Restart backend
+
+    # Wait for backend health check (max 30s)
+    while ! curl -sf http://localhost:3001/api/health; do
+        sleep 1
+    done
+
+    # THEN refresh browser (after backend confirmed ready)
+    xdotool key ctrl+F5
+}
+```
+
+**Benefits:**
+- No race condition (frontend loads when backend ready)
+- Reduced deployment window (~3-5s instead of ~14s)
+- Prevents "photo slideshow stuck in error state" issue
+
+### 2. Client-side: Automatic localStorage Clearing
+
+The frontend automatically clears localStorage when version changes:
+
+**Bootstrap check** (`src/main.tsx` → `src/utils/versionBootstrap.ts`):
+```typescript
+async function bootstrap() {
+    // Before React mounts, check version
+    const currentVersion = await fetch('/api/version');
+    const lastVersion = localStorage.getItem('__kiosk_app_version__');
+
+    if (lastVersion !== currentVersion) {
+        console.log('Version changed, clearing localStorage');
+        localStorage.clear();
+        localStorage.setItem('__kiosk_app_version__', currentVersion);
+    }
+
+    // Mount React with clean state
+    ReactDOM.createRoot(rootElement).render(<App />);
+}
+```
+
+**Runtime polling** (`src/hooks/useVersionCheck.ts`):
+```typescript
+// Poll every 30s for version changes (user left app open)
+setInterval(async () => {
+    const newVersion = await checkVersion();
+    if (newVersion !== currentVersion) {
+        localStorage.clear();
+        localStorage.setItem('__kiosk_app_version__', newVersion);
+        window.location.reload();
+    }
+}, 30000);
+```
+
+**Benefits:**
+- Prevents stale config from old versions
+- Eliminates version migration bugs
+- Ensures config is fetched fresh from server
+- Simpler debugging (known clean state after deploy)
+
+**What gets cleared:**
+- `kiosk-app:config` - Dashboard settings cache
+- `kiosk-app:app-state` - Application state
+- All other localStorage keys
+- **Preserved:** `__kiosk_app_version__` (version tracking key)
+
+**What doesn't get cleared:**
+- Server-side config (`/var/www/kiosk/server/data/config.internal.json`)
+- Admin view settings (stored server-side, encrypted)
+
+### Deployment Flow with Clean Start
+
+```
+1. GitHub Actions: Build & create release
+2. Pi: Poll, download, extract
+3. Pi: Restart kiosk-photos systemd service
+4. Pi: Poll health endpoint (max 30s): http://localhost:3001/api/health
+5. Pi: Send Ctrl+F5 to browser (hard refresh)
+6. Browser: Fetch /api/version
+7. Browser: Check localStorage version
+8. Browser: Version changed? → Clear localStorage
+9. Browser: Mount React with clean state
+10. Browser: Fetch fresh config from /api/config/public
+11. All widgets load successfully with no stale data
+```
+
 ## Files Modified
 
 - `docs/architecture/raspberry-pi-infrastructure.md` - Document auto-deploy setup
+- `scripts/auto-update.sh` - Fixed race condition, added health check before refresh
+- `src/main.tsx` - Added bootstrap with version check
+- `src/utils/versionBootstrap.ts` - Version check and localStorage clearing
+- `src/hooks/useVersionCheck.ts` - Clear localStorage before reload

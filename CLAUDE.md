@@ -301,12 +301,30 @@ The app automatically deploys when code is pushed to main branch. Pi polls GitHu
 Push to main → GitHub Actions builds → Creates release → Pi polls → Downloads & deploys
 ```
 
+### Clean Start on Deployment
+
+Deployments automatically ensure a clean browser state to prevent stale data issues:
+
+**Server-side** (`scripts/auto-update.sh`):
+1. Restart backend systemd service
+2. Wait for health check (max 30s): `curl http://localhost:3001/api/health`
+3. Send Ctrl+F5 to browser (hard refresh) AFTER backend ready
+
+**Client-side** (`src/main.tsx`, `src/utils/versionBootstrap.ts`):
+1. On page load, fetch `/api/version`
+2. Compare with `localStorage.getItem('__kiosk_app_version__')`
+3. If version changed → clear ALL localStorage
+4. Mount React with clean state, fetch fresh config from server
+
+**Result:** No race conditions, no stale cache, guaranteed clean start after deployment.
+
 ### Files
 - `.github/workflows/release.yml` - Builds and creates GitHub release
 - `scripts/auto-update.sh` - Pi polling script (update/rollback/status)
 - `scripts/kiosk-updater.service` - Systemd oneshot service
 - `scripts/kiosk-updater.timer` - Triggers every 5 minutes
 - `scripts/setup-auto-deploy.sh` - One-time Pi setup
+- `src/utils/versionBootstrap.ts` - Client-side version check and cache clearing
 
 ### Pi Commands
 ```bash

@@ -128,11 +128,71 @@ If issues persist, consider:
 - `src/services/photos.ts` - API fetch with fallback logic
 - `server/dist/index.js` - Backend managed by systemd
 
+## Additional Fix: Automatic localStorage Clearing
+
+**Commit:** dc5b9d6f
+
+In addition to fixing the race condition, we added automatic localStorage clearing on version changes to ensure truly clean starts:
+
+### Client-side Version Check
+
+**Bootstrap** (`src/main.tsx` → `src/utils/versionBootstrap.ts`):
+```typescript
+async function bootstrap() {
+    // Before React mounts, check version
+    const currentVersion = await fetch('/api/version');
+    const lastVersion = localStorage.getItem('__kiosk_app_version__');
+
+    if (lastVersion !== currentVersion) {
+        localStorage.clear();  // Clean slate
+        localStorage.setItem('__kiosk_app_version__', currentVersion);
+    }
+
+    ReactDOM.createRoot(rootElement).render(<App />);
+}
+```
+
+**Runtime polling** (`src/hooks/useVersionCheck.ts`):
+```typescript
+// Poll every 30s for version changes (user left app open)
+setInterval(async () => {
+    if (newVersion !== currentVersion) {
+        localStorage.clear();
+        localStorage.setItem('__kiosk_app_version__', newVersion);
+        window.location.reload();
+    }
+}, 30000);
+```
+
+### Benefits
+
+- Eliminates ALL browser cache issues (not just race condition)
+- Prevents stale config from old versions
+- No version migration bugs (clean slate every deploy)
+- Simpler debugging (guaranteed clean state)
+- Server-side config is source of truth (localStorage just cache)
+
+### What Gets Cleared
+
+- `kiosk-app:config` - Dashboard settings cache
+- `kiosk-app:app-state` - Application state
+- All other localStorage keys
+- **Preserved:** `__kiosk_app_version__` (version tracking)
+
+### What Doesn't Get Cleared
+
+- Server-side config (`/var/www/kiosk/server/data/config.internal.json`)
+- Admin view settings (stored server-side, encrypted)
+- User's actual configuration (fetched fresh from `/api/config/public`)
+
 ## Verification Checklist
 
 - [x] Removed duplicate process management
 - [x] Added backend health check before browser refresh
 - [x] Set 30s timeout for backend initialization
+- [x] Added automatic localStorage clearing on version change
+- [x] Version check runs before React mounts (bootstrap)
+- [x] Runtime version polling with localStorage clearing
 - [x] Tested deployment script syntax
 - [x] Documented issue and solution
 - [ ] Verified fix in production after next auto-deployment
