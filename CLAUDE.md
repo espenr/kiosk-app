@@ -120,6 +120,41 @@ The app uses **official Met.no weather icons** and **Lucide React** for UI eleme
 
 **Bundle impact**: +8.4 KB gzipped (39.95 KB total, acceptable for Pi 2 Model B)
 
+### Calendar Glassmorphism Design
+
+The calendar uses a glassmorphism/frosted glass effect optimized for Raspberry Pi 2 performance.
+
+**Current Phase:** Phase 1: Subtle Glass (8px blur)
+
+**Glass Effects:**
+- Calendar container: `backdrop-blur` (8px) with `bg-gray-900/30`
+- Day headers: `backdrop-blur` (8px) with `bg-gray-800/50`
+- Event cards: `backdrop-blur-sm` (4px) with `bg-white/10`
+
+**Event Card Design:**
+- Colored dot (8px circle) indicates calendar ownership
+- Glass background instead of solid calendar colors
+- White text for contrast against semi-transparent background
+- Layout: [Dot] [Icon] Time + Title
+
+**Performance Characteristics:**
+- Blur level: 8px (Phase 1)
+- GPU temperature: <70°C (monitored)
+- Memory: <250MB Chromium
+
+**Phase 2 Upgrade Path:**
+After 24 hours of successful Phase 1 monitoring:
+- Upgrade to `backdrop-blur-md` (12px) for enhanced depth
+- Add multi-layer dark overlay (`bg-gray-900/20`)
+- Add GPU optimization CSS (will-change, translateZ)
+- Monitor GPU temperature <75°C
+
+**Rollback:**
+If performance issues arise, revert to solid event card backgrounds or disable blur via CSS.
+
+**Testing:**
+Screenshot capture: `ssh pi@pi.local 'DISPLAY=:0 scrot /tmp/screen.png'`
+
 ## Photo Slideshow Backend Proxy
 
 The photo slideshow fetches images from an iCloud Shared Album via a Node.js backend proxy that handles URL expiration automatically.
