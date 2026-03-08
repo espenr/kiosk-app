@@ -7,6 +7,7 @@ import { route } from 'preact-router';
 import { getConfig, updateConfig, logout } from '../../../services/auth';
 import { useConfig } from '../../../contexts/ConfigContext';
 import { invalidateCalendarCache } from '../../../hooks/useCalendar';
+import { saveToStorage, STORAGE_KEYS } from '../../../utils/storage';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { StopPlaceSearch } from '../components/StopPlaceSearch';
@@ -101,8 +102,11 @@ export function SettingsPage() {
 
       await updateConfig(config, pin);
 
-      // Sync with ConfigContext
+      // Sync with ConfigContext to get latest server config
       await syncWithServer();
+
+      // Update localStorage to match server (prevents stale data on next reload)
+      saveToStorage(STORAGE_KEYS.CONFIG, config);
 
       // Clear dirty flag after successful save
       setIsDirty(false);

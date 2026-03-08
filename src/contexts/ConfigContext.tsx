@@ -141,8 +141,7 @@ function mergeWithDefaults(stored: Partial<KioskConfig>): KioskConfig {
     calendar: {
       ...defaultConfig.calendar,
       ...(stored.calendar ? removeUndefined(stored.calendar) : {}),
-      // Preserve calendars array from storage (don't merge with empty default)
-      calendars: stored.calendar?.calendars || defaultConfig.calendar.calendars,
+      // calendars array is already included in the spread above - no override needed
     },
     transport: {
       ...defaultConfig.transport,
@@ -220,7 +219,17 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
         console.log('[ConfigContext] Loaded public config from server');
         // Merge public config with localStorage for missing fields
         const stored = loadFromStorage<Partial<KioskConfig>>(STORAGE_KEYS.CONFIG, {});
-        const merged = mergeWithDefaults({ ...stored, ...publicConfig });
+
+        // CRITICAL: Ensure server calendar data overrides localStorage
+        // This fixes the bug where calendar colors would revert after page reload
+        const mergeInput = {
+          ...stored,
+          ...publicConfig,
+          // Explicitly preserve server calendar to prevent localStorage from overriding
+          calendar: publicConfig.calendar || stored.calendar || defaultConfig.calendar,
+        };
+
+        const merged = mergeWithDefaults(mergeInput);
 
         // Compare timestamps for migration from localStorage → server
         const storedTimestamp = stored.lastModified || 0;
@@ -274,7 +283,15 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
         if (serverTimestamp > currentTimestamp) {
           console.log('[ConfigContext] Config updated on server, reloading');
           const stored = loadFromStorage<Partial<KioskConfig>>(STORAGE_KEYS.CONFIG, {});
-          const merged = mergeWithDefaults({ ...stored, ...publicConfig });
+
+          // Ensure server calendar data overrides localStorage (same as initial load)
+          const mergeInput = {
+            ...stored,
+            ...publicConfig,
+            calendar: publicConfig.calendar || stored.calendar || defaultConfig.calendar,
+          };
+
+          const merged = mergeWithDefaults(mergeInput);
           setConfig(merged);
 
           // Invalidate calendar cache to force re-fetch with new credentials
