@@ -220,9 +220,26 @@ export async function handleLogin(req: IncomingMessage, res: ServerResponse): Pr
     recordLoginAttempt(ipAddress, true);
 
     // Load and cache config
-    const config = loadConfig(pin);
-    if (!config) {
-      sendJson(res, 500, { error: 'Failed to load config' });
+    let config;
+    try {
+      config = loadConfig(pin);
+      if (!config) {
+        sendJson(res, 500, { error: 'Failed to load config' });
+        return;
+      }
+    } catch (decryptErr) {
+      // Config decryption failed even though PIN hash matches
+      // This indicates encryption key mismatch (likely caused by auto-save using machine secret)
+      console.error('Config decryption failed despite correct PIN:', decryptErr);
+      console.error('⚠️  ENCRYPTION MISMATCH DETECTED ⚠️');
+      console.error('The config.enc.json file cannot be decrypted with the user PIN.');
+      console.error('This usually happens when auto-save encrypted the config with the machine secret.');
+      console.error('To fix: Run the fix script to re-encrypt config with the correct PIN.');
+
+      sendJson(res, 500, {
+        error: 'Config decryption failed',
+        details: 'Encryption key mismatch. Please contact administrator.',
+      });
       return;
     }
 

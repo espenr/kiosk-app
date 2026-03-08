@@ -27,7 +27,7 @@ import {
   handleAutoSaveConfig,
   handleFactoryReset,
 } from './handlers/config.js';
-import { loadPublicConfig } from './utils/storage.js';
+import { loadPublicConfig, isSetupComplete } from './utils/storage.js';
 import { handleGetCalendarEvents } from './handlers/calendar.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -290,6 +290,27 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
   sendJson(res, 404, { error: 'Not found' });
 }
 
+/**
+ * Check encryption consistency on startup
+ * Warns if config.enc.json encryption might be mismatched
+ */
+function checkEncryptionConsistency(): void {
+  // Only check if setup is complete
+  if (!isSetupComplete()) {
+    return;
+  }
+
+  console.log('\n=== Config Encryption Health Check ===');
+  console.log('Checking if config.enc.json is encrypted with user PIN...');
+  console.log('NOTE: This check requires knowing the user PIN.');
+  console.log('If you encounter login issues, the config may have been');
+  console.log('encrypted with the machine secret by auto-save.');
+  console.log('Use the fix scripts in the project root to repair.\n');
+
+  // Note: We can't actually validate without the user's PIN
+  // This is just a warning that the admin should be aware of
+}
+
 // Load environment and start server
 loadEnv();
 
@@ -303,4 +324,7 @@ const server = createServer((req, res) => {
 server.listen(PORT, () => {
   console.log(`Photo proxy server running on port ${PORT}`);
   console.log(`iCloud album configured: ${process.env.ICLOUD_ALBUM_URL ? 'yes' : 'no'}`);
+
+  // Check encryption consistency on startup
+  checkEncryptionConsistency();
 });

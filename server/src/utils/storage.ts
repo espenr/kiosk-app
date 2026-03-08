@@ -239,3 +239,65 @@ export function isSetupComplete(): boolean {
   const authData = loadAuthData();
   return authData?.setupComplete ?? false;
 }
+
+/**
+ * Validate that config.enc.json can be decrypted with the user's PIN
+ * This detects encryption key mismatches caused by auto-save using machine secret
+ *
+ * @param pin - User's PIN to test decryption
+ * @returns Object with validation result and details
+ */
+export function validateConfigEncryption(pin: string): {
+  valid: boolean;
+  error?: string;
+  details?: string;
+} {
+  // Check if setup is complete
+  const authData = loadAuthData();
+  if (!authData || !authData.setupComplete) {
+    return {
+      valid: false,
+      error: 'Setup not complete',
+      details: 'Auth data not found or setup incomplete',
+    };
+  }
+
+  // Check if encrypted config exists
+  if (!existsSync(CONFIG_FILE)) {
+    return {
+      valid: false,
+      error: 'Encrypted config not found',
+      details: `File does not exist: ${CONFIG_FILE}`,
+    };
+  }
+
+  try {
+    // Try to decrypt config with provided PIN
+    const encryptedContent = readFileSync(CONFIG_FILE, 'utf-8');
+    const decryptedContent = decrypt(encryptedContent, pin, authData.salt);
+
+    // Verify it's valid JSON
+    const config = JSON.parse(decryptedContent) as KioskConfig;
+
+    // Basic structure validation
+    if (!config.location || !config.apiKeys || !config.calendar) {
+      return {
+        valid: false,
+        error: 'Invalid config structure',
+        details: 'Decryption succeeded but config is missing required fields',
+      };
+    }
+
+    return {
+      valid: true,
+      details: 'Config can be decrypted and has valid structure',
+    };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    return {
+      valid: false,
+      error: 'Decryption failed',
+      details: `Cannot decrypt config.enc.json with provided PIN: ${errorMessage}`,
+    };
+  }
+}

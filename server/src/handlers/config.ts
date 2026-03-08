@@ -115,7 +115,10 @@ export function handleGetPublicConfig(req: IncomingMessage, res: ServerResponse)
 /**
  * PATCH /api/config/auto
  * Auto-save configuration (requires authentication, no PIN needed)
- * Uses machine secret for encryption instead of user PIN
+ *
+ * IMPORTANT: This endpoint does NOT update config.enc.json to prevent encryption key mismatches.
+ * Only manual saves with PIN verification (handleUpdateConfig) should update config.enc.json.
+ * Auto-save only updates public and internal configs for dashboard/backend access.
  */
 export async function handleAutoSaveConfig(req: IncomingMessage, res: ServerResponse): Promise<void> {
   try {
@@ -136,37 +139,22 @@ export async function handleAutoSaveConfig(req: IncomingMessage, res: ServerResp
       return;
     }
 
-    // Load machine secret for encryption
-    const MACHINE_SECRET_FILE = join(DATA_DIR, 'machine.secret');
-    if (!existsSync(MACHINE_SECRET_FILE)) {
-      sendJson(res, 500, { error: 'Machine secret not found' });
-      return;
-    }
-
-    const machineSecret = readFileSync(MACHINE_SECRET_FILE);
-    const machinePin = machineSecret.toString('hex');
-
     // Add timestamp for conflict detection
     const configWithTimestamp = {
       ...config,
       lastModified: Date.now(),
     };
 
-    // Encrypt config with machine secret
-    const content = JSON.stringify(configWithTimestamp, null, 2);
-    const encrypted = encrypt(content, machinePin, authData.salt);
-
-    // Save encrypted config
-    const CONFIG_FILE = join(DATA_DIR, 'config.enc.json');
-    writeFileSync(CONFIG_FILE, encrypted, { mode: 0o600 });
-    chmodSync(CONFIG_FILE, 0o600);
-
-    // Also save public config and calendar config for backend access
+    // CRITICAL: Only save public and internal configs
+    // Do NOT update config.enc.json to prevent encryption key mismatch
+    // The encrypted config should only be updated via handleUpdateConfig with PIN verification
     savePublicConfig(configWithTimestamp);
     saveInternalCalendarConfig(configWithTimestamp);
 
     // Update session cache
     cacheConfigInSession(sessionId, configWithTimestamp);
+
+    console.log('[Auto-save] Updated public and internal configs (encrypted config unchanged)');
 
     // Return updated config with timestamp
     sendJson(res, 200, configWithTimestamp, { allowOrigin: req.headers.origin, allowCredentials: true });
