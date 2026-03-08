@@ -54,7 +54,7 @@ export function Transport() {
       </span>
 
       {/* Bus name (destination) */}
-      <span className="font-semibold text-white" style={{ fontSize: '2.8rem' }}>
+      <span className="font-semibold text-white" style={{ fontSize: '2.24rem' }}>
         {nextDeparture.destination}
       </span>
 
