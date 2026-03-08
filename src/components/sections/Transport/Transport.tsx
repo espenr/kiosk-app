@@ -47,7 +47,7 @@ export function Transport() {
   }
 
   return (
-    <div className="h-full w-full px-6 flex items-center gap-4">
+    <div className="h-full w-full px-6 flex items-center gap-4 bg-black/30 backdrop-blur border border-white/5 rounded-lg">
       {/* Bus number (line) - Scaled for 1080x1920 */}
       <span className="bg-blue-600 text-white px-4 py-2 rounded font-bold" style={{ fontSize: '2.8rem' }}>
         {nextDeparture.line}

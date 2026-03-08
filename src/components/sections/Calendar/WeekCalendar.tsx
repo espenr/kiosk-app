@@ -54,7 +54,7 @@ export function WeekCalendar() {
   }
 
   return (
-    <div className="h-full w-full px-2 py-2 bg-gray-900/30 backdrop-blur border border-white/5 rounded-lg shadow-xl">
+    <div className="h-full w-full px-2 py-2 bg-black/30 backdrop-blur border border-white/5 rounded-lg shadow-xl">
       {/* Calendar grid - full width */}
       <div className="h-full grid grid-cols-5 gap-3 p-2">
         {days.map((day) => (

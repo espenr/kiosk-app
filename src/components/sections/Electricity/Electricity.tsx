@@ -55,7 +55,7 @@ export function Electricity() {
   };
 
   return (
-    <div className="h-full w-full px-4 py-2 flex gap-4">
+    <div className="h-full w-full px-4 py-2 flex gap-4 bg-black/30 backdrop-blur border border-white/5 rounded-lg">
       {/* Current price - compact, scaled for 1080x1920 */}
       <div className="flex-shrink-0 flex flex-col justify-center border-r border-gray-700 pr-4">
         <div className="text-gray-400 flex items-center gap-1" style={{ fontSize: '1.1rem' }}>
