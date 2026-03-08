@@ -273,6 +273,21 @@ cmd_update() {
             log "Preserved .env file"
         fi
 
+        # Validate critical files after extraction
+        if [[ ! -f "$STAGING_DIR/.env" ]]; then
+            log "WARNING: .env file missing after deployment"
+            log "Photo proxy may not work correctly"
+
+            # Try to restore from config.public.json
+            if [[ -f "$STAGING_DIR/server/data/config.public.json" ]]; then
+                ALBUM_URL=$(jq -r '.photos.sharedAlbumUrl' "$STAGING_DIR/server/data/config.public.json" 2>/dev/null)
+                if [[ -n "$ALBUM_URL" && "$ALBUM_URL" != "null" ]]; then
+                    echo "ICLOUD_ALBUM_URL=$ALBUM_URL" > "$STAGING_DIR/.env"
+                    log "Created .env from config.public.json"
+                fi
+            fi
+        fi
+
         # Move to versioned directory
         mv "$STAGING_DIR" "$RELEASES_DIR/$latest"
         log "Extracted to $RELEASES_DIR/$latest"

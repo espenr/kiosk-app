@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2026-03-08] - Fix Photo Slideshow Not Displaying Images
+
+### Fixed
+- **Photo backend**: Reverted derivative selection logic to original indexed approach (commit 7a80545a)
+  - Previous grouping logic (commit 55f7e7eb) incorrectly selected thumbnail derivatives instead of full-size images
+  - Thumbnail URLs returned HTTP 501 Not Implemented from Apple CDN
+  - Now correctly selects every 2nd derivative (full-size images) using simple `i += 2` loop
+- **Auto-deploy**: Added .env file validation and recovery in `scripts/auto-update.sh`
+  - Warns if .env missing after deployment
+  - Attempts to restore from config.public.json if available
+  - Prevents photo proxy failures on fresh deployments
+
+### Root Cause
+- March 7th commit attempted to improve photo quality by "always picking first (highest-res) derivative"
+- Grouping logic (`photosByGuid`) was broken - couldn't correctly extract photoGuid from checksum format
+- Each derivative became its own "photo" (228 instead of 114), and wrong derivatives were selected
+
 ## [2026-03-07] - Replace Weather Emojis with Official Yr.no Icons
 
 ### Changed
