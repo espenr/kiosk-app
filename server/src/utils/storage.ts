@@ -191,6 +191,7 @@ export function savePublicConfig(config: KioskConfig): void {
       calendars: config.calendar.calendars,
       configured: Boolean(config.calendar.serviceAccountKey),
     },
+    transport: config.transport,
   };
 
   const content = JSON.stringify(publicConfig, null, 2);
