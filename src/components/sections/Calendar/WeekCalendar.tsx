@@ -116,17 +116,17 @@ function DayColumn({ day, events }: DayColumnProps) {
   return (
     <div className="flex flex-col min-h-0">
       {/* Day header with backdrop */}
-      <div className="bg-gray-800/50 backdrop-blur border-t border-x border-white/10 rounded-t px-2 py-1.5 mb-2">
+      <div className="bg-gray-800/50 backdrop-blur border-t border-x border-white/10 rounded-t px-2 py-1 mb-1.5">
         {/* Day name */}
         <div className="text-center mb-0.5">
-          <div className="text-white font-normal" style={{ fontSize: '1.3rem' }}>
+          <div className="text-white font-normal" style={{ fontSize: '1.1rem' }}>
             {day.dayName}
           </div>
         </div>
 
         {/* Date number */}
         <div className="text-center flex justify-center">
-          <span className="text-gray-300 font-light" style={{ fontSize: '2.2rem', lineHeight: '1' }}>
+          <span className="text-gray-300 font-light" style={{ fontSize: '1.8rem', lineHeight: '1' }}>
             {day.dayNumber}
           </span>
         </div>
