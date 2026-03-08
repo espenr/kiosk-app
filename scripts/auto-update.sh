@@ -148,6 +148,15 @@ restart_services() {
         error "Backend failed to become ready after ${max_wait}s. Check: sudo journalctl -u kiosk-photos -n 50"
     fi
 
+    # Ensure unclutter service is running (hide cursor)
+    if systemctl --user is-active --quiet kiosk.service; then
+        if ! systemctl --user is-active --quiet unclutter.service 2>/dev/null; then
+            log "Starting unclutter service..."
+            systemctl --user start unclutter.service 2>/dev/null || true
+        fi
+        log "Unclutter service verified"
+    fi
+
     # Hard refresh kiosk browser (send Ctrl+F5 to clear cache)
     # Only refresh after backend is confirmed healthy
     if command -v xdotool &> /dev/null; then

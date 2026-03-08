@@ -428,6 +428,58 @@ sudo journalctl -u tv-on.service
 - Timers use `Persistent=true` to run missed executions on next boot
 - Kiosk service continues running when TV is off (Chromium stays active)
 
+## Mouse Cursor Hiding (Unclutter Service)
+
+The mouse cursor is automatically hidden using a systemd user service for unclutter.
+
+### Components
+- `scripts/systemd/unclutter.service` - Systemd service to hide cursor
+- `scripts/setup-unclutter.sh` - Installation script
+- Integrated into `scripts/auto-update.sh` - Ensures service runs after deployments
+
+### Setup
+```bash
+# One-time setup on Pi
+sudo bash /var/www/kiosk/scripts/setup-unclutter.sh
+```
+
+### Manual Control
+```bash
+# Check status
+systemctl --user status unclutter.service
+
+# Stop (makes cursor visible for debugging)
+systemctl --user stop unclutter.service
+
+# Start (hides cursor)
+systemctl --user start unclutter.service
+
+# View logs
+journalctl --user -u unclutter.service
+```
+
+### Helper Commands (from dev machine)
+```bash
+# Check cursor status
+./scripts/kiosk-service.sh cursor-status
+
+# Hide cursor
+./scripts/kiosk-service.sh hide-cursor
+
+# Show cursor (for debugging)
+./scripts/kiosk-service.sh show-cursor
+
+# Verify service (includes cursor check)
+./scripts/kiosk-service.sh verify
+```
+
+### Notes
+- Hides cursor after 0.1 seconds of inactivity
+- Uses `-root` flag for root window cursor hiding
+- Auto-starts with kiosk service via systemd dependency
+- Auto-restarts if process crashes
+- Managed independently from kiosk.service
+
 ### Troubleshooting
 **CEC not working after setup:**
 If CEC commands timeout or TV doesn't respond:

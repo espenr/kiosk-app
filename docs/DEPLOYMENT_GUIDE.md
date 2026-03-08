@@ -148,15 +148,14 @@ mkdir -p ~/.config/lxsession/LXDE-pi
 nano ~/.config/lxsession/LXDE-pi/autostart
 ```
 
+**Note:** This section documents the legacy LXDE autostart method. The current deployment uses systemd user services instead (see below).
+
 Add the following content with **optimized flags for Pi Zero W 2**:
 
 ```bash
 @lxpanel --profile LXDE-pi
 @pcmanfm --desktop --profile LXDE-pi
 @xscreensaver -no-splash
-
-# Hide mouse cursor after 0.1 seconds of inactivity
-@unclutter -idle 0.1 -root
 
 # Start Chromium in kiosk mode with memory optimizations
 @chromium-browser \
@@ -588,6 +587,72 @@ journalctl -u kiosk-photos -f
 
 # Restart
 sudo systemctl restart kiosk-photos
+```
+
+## Systemd Services
+
+The kiosk uses systemd user services for managing components:
+
+### Kiosk Service (Chromium)
+
+Manages the Chromium browser in kiosk mode.
+
+**Setup:**
+```bash
+# Install service (usually done by setup scripts)
+cp scripts/systemd/kiosk.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable kiosk.service
+systemctl --user start kiosk.service
+```
+
+**Management:**
+```bash
+# Status
+systemctl --user status kiosk.service
+
+# Restart
+systemctl --user restart kiosk.service
+
+# Logs
+journalctl --user -u kiosk.service -f
+```
+
+### Unclutter Service (Cursor Hiding)
+
+Hides the mouse cursor after 0.1 seconds of inactivity.
+
+**Setup:**
+```bash
+# Install and configure
+sudo bash /var/www/kiosk/scripts/setup-unclutter.sh
+```
+
+**Management:**
+```bash
+# Status
+systemctl --user status unclutter.service
+
+# Stop (for debugging - makes cursor visible)
+systemctl --user stop unclutter.service
+
+# Start (hide cursor)
+systemctl --user start unclutter.service
+
+# Logs
+journalctl --user -u unclutter.service
+```
+
+**Helper Commands:**
+```bash
+# Check cursor status from dev machine
+./scripts/kiosk-service.sh cursor-status
+
+# Hide cursor
+./scripts/kiosk-service.sh hide-cursor
+
+# Show cursor (for debugging)
+./scripts/kiosk-service.sh show-cursor
 ```
 
 ## Future Improvements

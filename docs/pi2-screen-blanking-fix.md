@@ -109,8 +109,39 @@ The fix implements multiple layers of screen blanking prevention:
 1. **X Server Level** (via LightDM): X started with `-s 0 -dpms` flags
 2. **Session Level** (via xset): Screensaver and DPMS explicitly disabled when kiosk starts
 3. **Process Level**: xscreensaver daemon not running
+4. **Cursor Hiding**: Unclutter service automatically hides mouse cursor
 
 This ensures the screen stays on continuously even if one mechanism fails.
+
+## Cursor Hiding (Unclutter Service)
+
+The mouse cursor is hidden using a separate systemd user service for unclutter.
+
+**Service File**: `scripts/systemd/unclutter.service`
+
+**Setup**:
+```bash
+sudo bash /var/www/kiosk/scripts/setup-unclutter.sh
+```
+
+**Management**:
+```bash
+# Check status
+systemctl --user status unclutter.service
+
+# Stop (makes cursor visible for debugging)
+systemctl --user stop unclutter.service
+
+# Start (hides cursor)
+systemctl --user start unclutter.service
+```
+
+The unclutter service:
+- Starts automatically with the kiosk service
+- Hides cursor after 0.1 seconds of inactivity
+- Uses `-root` flag for root window cursor hiding
+- Auto-restarts if it crashes
+- Is managed independently from the kiosk service
 
 ## Expected Behavior
 

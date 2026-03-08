@@ -19,19 +19,23 @@ Kiosk Service Management Script
 Usage: $0 [command]
 
 Commands:
-    status      Show service status and key metrics
-    start       Start the kiosk service
-    stop        Stop the kiosk service
-    restart     Restart the kiosk service
-    logs        View service logs (follow mode)
-    verify      Comprehensive verification check
-    enable      Enable service to start at boot
-    disable     Disable service from starting at boot
+    status          Show service status and key metrics
+    start           Start the kiosk service
+    stop            Stop the kiosk service
+    restart         Restart the kiosk service
+    logs            View service logs (follow mode)
+    verify          Comprehensive verification check
+    enable          Enable service to start at boot
+    disable         Disable service from starting at boot
+    cursor-status   Check if cursor is hidden (unclutter status)
+    hide-cursor     Start unclutter service to hide cursor
+    show-cursor     Stop unclutter service (for debugging)
 
 Examples:
     $0 status
     $0 restart
     $0 logs
+    $0 cursor-status
 EOF
     exit 1
 }
@@ -100,6 +104,9 @@ cmd_verify() {
         else
             echo '${GREEN}✓ No old keyring files${NC}'
         fi
+
+        echo -e '\n${YELLOW}Mouse Cursor:${NC}'
+        pgrep -f unclutter > /dev/null && echo '${GREEN}✓ Unclutter running (cursor hidden)${NC}' || echo '${RED}✗ Unclutter not running (cursor visible)${NC}'
     "
 }
 
@@ -113,6 +120,39 @@ cmd_disable() {
     echo -e "${YELLOW}Disabling kiosk service...${NC}"
     run_ssh "systemctl --user disable kiosk.service"
     echo -e "${GREEN}Service disabled from starting at boot${NC}"
+}
+
+cmd_cursor_status() {
+    echo -e "${YELLOW}=== Cursor Status ===${NC}"
+    run_ssh "
+        if systemctl --user is-active --quiet unclutter.service; then
+            echo '${GREEN}✓ Unclutter service is running${NC}'
+            if pgrep -f unclutter > /dev/null; then
+                PID=\$(pgrep -f unclutter)
+                echo '${GREEN}✓ Unclutter process found (PID: \$PID)${NC}'
+                echo '${GREEN}✓ Mouse cursor is hidden${NC}'
+            else
+                echo '${YELLOW}⚠ Service running but process not found${NC}'
+            fi
+        else
+            echo '${RED}✗ Unclutter service is not running${NC}'
+            echo '${RED}✗ Mouse cursor is visible${NC}'
+        fi
+    "
+}
+
+cmd_hide_cursor() {
+    echo -e "${YELLOW}Starting unclutter service...${NC}"
+    run_ssh "systemctl --user start unclutter.service"
+    echo -e "${GREEN}Service started${NC}"
+    sleep 1
+    cmd_cursor_status
+}
+
+cmd_show_cursor() {
+    echo -e "${YELLOW}Stopping unclutter service (for debugging)...${NC}"
+    run_ssh "systemctl --user stop unclutter.service"
+    echo -e "${GREEN}Service stopped - cursor will be visible${NC}"
 }
 
 # Main command handler
@@ -140,6 +180,15 @@ case "${1:-}" in
         ;;
     disable)
         cmd_disable
+        ;;
+    cursor-status)
+        cmd_cursor_status
+        ;;
+    hide-cursor)
+        cmd_hide_cursor
+        ;;
+    show-cursor)
+        cmd_show_cursor
         ;;
     *)
         usage
