@@ -151,16 +151,23 @@ function EventItem({ event }: EventItemProps) {
   const icon = getCalendarIcon(event.calendarIcon);
 
   return (
-    <div className="backdrop-blur-sm bg-white/10 border border-white/15 rounded px-1.5 pt-0.5 pb-1">
+    <div
+      className="backdrop-blur-sm bg-white/10 rounded px-1.5 pt-0.5 pb-1"
+      style={{
+        border: event.isAllDay ? `1px solid ${color}` : '1px solid rgba(255, 255, 255, 0.15)'
+      }}
+    >
       <div className="flex items-start gap-1.5">
-        {/* Colored dot indicator for calendar */}
-        <div
-          className="w-2 h-2 rounded-full flex-shrink-0"
-          style={{
-            backgroundColor: color,
-            transform: 'translateY(5px)'  // Calculated via browser measurement for perfect alignment
-          }}
-        />
+        {/* Colored dot indicator for calendar (only for timed events) */}
+        {!event.isAllDay && (
+          <div
+            className="w-2 h-2 rounded-full flex-shrink-0"
+            style={{
+              backgroundColor: color,
+              transform: 'translateY(5px)'  // Calculated via browser measurement for perfect alignment
+            }}
+          />
+        )}
 
         {/* Icon (if present) */}
         {icon && (
@@ -170,7 +177,16 @@ function EventItem({ event }: EventItemProps) {
         )}
 
         {/* Time + Title */}
-        <div className="flex-1 min-w-0" style={{ lineHeight: '1.1' }}>
+        <div
+          className="flex-1 min-w-0"
+          style={{
+            lineHeight: '1.1',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden'
+          }}
+        >
           <span className="font-normal text-white" style={{ fontSize: '0.7rem' }}>
             {!event.isAllDay && `${formatEventTime(event.start)} `}
             <span style={{ fontSize: '0.75rem' }}>{event.title}</span>
