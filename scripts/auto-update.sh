@@ -114,51 +114,42 @@ cleanup_old_versions() {
 restart_services() {
     log "Restarting kiosk services..."
 
-    # Stop existing backend server
-    if pgrep -f "node.*server/dist/index.js" > /dev/null; then
-        log "Stopping existing backend server..."
-        pkill -f "node.*server/dist/index.js" || true
-        sleep 2
-
-        # Force kill if still running
-        if pgrep -f "node.*server/dist/index.js" > /dev/null; then
-            warn "Backend still running, force killing..."
-            pkill -9 -f "node.*server/dist/index.js" || true
-            sleep 1
-        fi
-    fi
-
-    # Start backend server
-    log "Starting backend server..."
-    cd "$CURRENT_LINK/server"
-
-    # Check that dist/index.js exists
-    if [[ ! -f "dist/index.js" ]]; then
+    # Check that backend server file exists before restarting
+    if [[ ! -f "$CURRENT_LINK/server/dist/index.js" ]]; then
         error "Backend server file not found: $CURRENT_LINK/server/dist/index.js"
     fi
 
-    # Start server in background
-    nohup node dist/index.js > /tmp/kiosk-backend.log 2>&1 &
-    local backend_pid=$!
-    log "Backend server started with PID: $backend_pid"
-
-    # Wait for process to stabilize
-    sleep 2
-
-    # Verify process is still running
-    if ! ps -p "$backend_pid" > /dev/null 2>&1; then
-        error "Backend server failed to start (process died immediately). Check /tmp/kiosk-backend.log"
+    # Restart kiosk-photos systemd service (manages backend on port 3001)
+    if systemctl is-active --quiet kiosk-photos; then
+        log "Restarting kiosk-photos service..."
+        sudo systemctl restart kiosk-photos
+    else
+        log "Starting kiosk-photos service..."
+        sudo systemctl start kiosk-photos
     fi
 
-    log "Backend server process verified running (PID: $backend_pid)"
+    # Wait for backend to be fully ready before refreshing browser
+    log "Waiting for backend to initialize..."
+    local max_wait=30
+    local wait_count=0
+    local backend_ready=false
 
-    # Restart photo server if running
-    if systemctl is-active --quiet kiosk-photos; then
-        sudo systemctl restart kiosk-photos
-        log "Restarted kiosk-photos service"
+    while [ $wait_count -lt $max_wait ]; do
+        if curl -sf http://localhost:3001/api/health > /dev/null 2>&1; then
+            backend_ready=true
+            log "Backend ready after ${wait_count}s"
+            break
+        fi
+        sleep 1
+        ((wait_count++))
+    done
+
+    if ! $backend_ready; then
+        error "Backend failed to become ready after ${max_wait}s. Check: sudo journalctl -u kiosk-photos -n 50"
     fi
 
     # Hard refresh kiosk browser (send Ctrl+F5 to clear cache)
+    # Only refresh after backend is confirmed healthy
     if command -v xdotool &> /dev/null; then
         export DISPLAY=:0
         xdotool key --clearmodifiers ctrl+F5 2>/dev/null || true
