@@ -152,10 +152,10 @@ function EventItem({ event }: EventItemProps) {
 
   return (
     <div className="backdrop-blur-sm bg-white/10 border border-white/15 rounded px-1.5 py-1">
-      <div className="flex items-start gap-1.5 leading-tight">
+      <div className="flex items-center gap-1.5 leading-tight">
         {/* Colored dot indicator for calendar */}
         <div
-          className="w-2 h-2 rounded-full flex-shrink-0 mt-0.5"
+          className="w-2 h-2 rounded-full flex-shrink-0"
           style={{ backgroundColor: color }}
         />
 
