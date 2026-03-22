@@ -92,22 +92,38 @@ export async function fetchPhotosFromICloud(albumUrl: string): Promise<Photo[]> 
   }
 
   // Build photo URLs from response
-  // The API returns multiple derivatives per photo (thumbnail + full size)
-  // We want to take every other one (the larger size, usually index 0 of each pair)
+  // iCloud returns ~2 derivatives per photo (different resolutions)
   const items = Object.values(urlsData.items);
-  const photos: Photo[] = [];
 
-  // Take every other item (the larger derivative)
-  for (let i = 0; i < items.length; i += 2) {
-    const item = items[i];
-    if (item.url_location && item.url_path) {
-      photos.push({
-        url: `https://${item.url_location}${item.url_path}`,
-      });
+  // Helper to extract filename from URL path
+  const getFilename = (path: string): string => {
+    const parts = path.split('/');
+    return parts[parts.length - 1]?.split('?')[0] || 'unknown';
+  };
+
+  // Build photo URLs from response
+  // iCloud returns ~2 derivatives per photo, but they're not in consecutive pairs
+  // Group by filename and take the first occurrence of each unique photo
+  const photos: Photo[] = [];
+  const seenFilenames = new Set<string>();
+
+  for (const item of items) {
+    if (!item.url_location || !item.url_path) continue;
+
+    const filename = getFilename(item.url_path);
+
+    // Skip if we've already seen this filename
+    if (seenFilenames.has(filename)) {
+      continue;
     }
+
+    seenFilenames.add(filename);
+    photos.push({
+      url: `https://${item.url_location}${item.url_path}`,
+    });
   }
 
-  console.log(`[Photo] Selected ${photos.length} photos from ${items.length} total derivatives`);
+  console.log(`[Photo] Selected ${photos.length} unique photos from ${items.length} total derivatives (${items.length - photos.length} duplicates skipped)`);
 
   return photos;
 }
