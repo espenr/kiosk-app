@@ -130,10 +130,13 @@ export function PhotoSlideshow() {
         </div>
       )}
 
-      {/* Photo counter (subtle, bottom right) */}
-      {photos.length > 1 && (
-        <div className="absolute bottom-2 right-2 bg-black/40 text-white/70 text-xs px-2 py-1 rounded">
-          {currentIndex + 1} / {photos.length}
+      {/* Photo number indicator */}
+      {photos.length > 0 && (
+        <div
+          className="fixed top-16 left-4 bg-black/80 text-white text-lg font-bold px-3 py-1.5 rounded-lg shadow-lg"
+          style={{ zIndex: 99999 }}
+        >
+          #{currentIndex + 1}
         </div>
       )}
     </div>
