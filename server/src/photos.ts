@@ -101,29 +101,104 @@ export async function fetchPhotosFromICloud(albumUrl: string): Promise<Photo[]> 
     return parts[parts.length - 1]?.split('?')[0] || 'unknown';
   };
 
-  // Build photo URLs from response
-  // iCloud returns ~2 derivatives per photo, but they're not in consecutive pairs
-  // Group by filename and take the first occurrence of each unique photo
-  const photos: Photo[] = [];
-  const seenFilenames = new Set<string>();
+  // Helper to fetch image dimensions from URL
+  async function getImageDimensions(url: string): Promise<{ width: number; height: number } | null> {
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
+      if (!response.ok) return null;
 
-  for (const item of items) {
-    if (!item.url_location || !item.url_path) continue;
+      const buffer = await response.arrayBuffer();
 
-    const filename = getFilename(item.url_path);
+      // Parse JPEG dimensions from buffer (quick check without full decode)
+      const view = new DataView(buffer);
 
-    // Skip if we've already seen this filename
-    if (seenFilenames.has(filename)) {
-      continue;
+      // JPEG magic number check
+      if (view.getUint16(0) !== 0xFFD8) return null;
+
+      // Scan for SOF (Start of Frame) marker
+      let offset = 2;
+      while (offset < view.byteLength - 10) {
+        const marker = view.getUint16(offset);
+
+        // SOF markers (0xFFC0-0xFFC3, 0xFFC5-0xFFC7, 0xFFC9-0xFFCB, 0xFFCD-0xFFCF)
+        if ((marker >= 0xFFC0 && marker <= 0xFFC3) ||
+            (marker >= 0xFFC5 && marker <= 0xFFC7) ||
+            (marker >= 0xFFC9 && marker <= 0xFFCB) ||
+            (marker >= 0xFFCD && marker <= 0xFFCF)) {
+          const height = view.getUint16(offset + 5);
+          const width = view.getUint16(offset + 7);
+          return { width, height };
+        }
+
+        // Skip to next marker
+        const length = view.getUint16(offset + 2);
+        offset += length + 2;
+      }
+
+      return null;
+    } catch {
+      return null;
     }
-
-    seenFilenames.add(filename);
-    photos.push({
-      url: `https://${item.url_location}${item.url_path}`,
-    });
   }
 
-  console.log(`[Photo] Selected ${photos.length} unique photos from ${items.length} total derivatives (${items.length - photos.length} duplicates skipped)`);
+  // Group derivatives by filename
+  const derivativesByFilename = new Map<string, typeof items>();
+  for (const item of items) {
+    if (!item.url_location || !item.url_path) continue;
+    const filename = getFilename(item.url_path);
+    if (!derivativesByFilename.has(filename)) {
+      derivativesByFilename.set(filename, []);
+    }
+    derivativesByFilename.get(filename)!.push(item);
+  }
+
+  console.log(`[Photo] Found ${derivativesByFilename.size} unique photos from ${items.length} derivatives`);
+  console.log(`[Photo] Selecting best quality derivative for each photo...`);
+
+  // Select best derivative for each photo
+  const photos: Photo[] = [];
+  let checkedCount = 0;
+  let multiDerivCount = 0;
+
+  for (const [filename, derivatives] of derivativesByFilename) {
+    checkedCount++;
+
+    if (derivatives.length === 1) {
+      // Only one derivative, use it
+      photos.push({
+        url: `https://${derivatives[0].url_location}${derivatives[0].url_path}`,
+      });
+    } else {
+      // Multiple derivatives - check dimensions and select largest
+      multiDerivCount++;
+      let bestDerivative = derivatives[0];
+      let bestArea = 0;
+
+      for (const deriv of derivatives) {
+        const url = `https://${deriv.url_location}${deriv.url_path}`;
+        const dims = await getImageDimensions(url);
+
+        if (dims) {
+          const area = dims.width * dims.height;
+          if (area > bestArea) {
+            bestArea = area;
+            bestDerivative = deriv;
+          }
+        }
+      }
+
+      photos.push({
+        url: `https://${bestDerivative.url_location}${bestDerivative.url_path}`,
+      });
+    }
+
+    // Log progress every 20 photos
+    if (checkedCount % 20 === 0) {
+      console.log(`[Photo] Progress: ${checkedCount}/${derivativesByFilename.size} photos processed`);
+    }
+  }
+
+  console.log(`[Photo] Selected ${photos.length} photos (checked dimensions for ${multiDerivCount} multi-derivative photos)`);
 
   return photos;
 }
