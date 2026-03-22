@@ -15,14 +15,14 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: 3002,
     host: true, // Listen on all addresses
     watch: {
       usePolling: true, // Use polling for file changes (useful for some environments)
     },
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:3003',
         changeOrigin: true,
       },
     },

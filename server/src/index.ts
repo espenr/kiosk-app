@@ -32,7 +32,7 @@ import { handleGetCalendarEvents } from './handlers/calendar.js';
 import { addSSEClient } from './utils/sse.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const PORT = parseInt(process.env.PORT || '3001', 10);
+const PORT = parseInt(process.env.PORT || '3003', 10);
 const startTime = Date.now();
 
 /**

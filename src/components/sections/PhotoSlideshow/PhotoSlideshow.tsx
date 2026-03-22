@@ -133,7 +133,7 @@ export function PhotoSlideshow() {
       {/* Photo number indicator */}
       {photos.length > 0 && (
         <div
-          className="fixed top-16 left-4 bg-black/80 text-white text-lg font-bold px-3 py-1.5 rounded-lg shadow-lg"
+          className="fixed top-16 left-4 bg-black/70 text-white text-base font-semibold px-2.5 py-1.5 rounded-md shadow-lg"
           style={{ zIndex: 99999 }}
         >
           #{currentIndex + 1}

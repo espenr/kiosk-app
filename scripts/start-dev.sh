@@ -8,8 +8,8 @@ set -euo pipefail
 readonly SCRIPT_NAME="$(basename "$0")"
 readonly SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 readonly PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-readonly FRONTEND_PORT=3000
-readonly BACKEND_PORT=3001
+readonly FRONTEND_PORT=3002
+readonly BACKEND_PORT=3003
 readonly KILL_TIMEOUT=3
 
 # PID file locations

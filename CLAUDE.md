@@ -6,8 +6,8 @@ This file provides guidance to Claude Code when working with this repository.
 
 ### Development
 - `./scripts/start-dev.sh` - Start both frontend and backend servers (recommended)
-  - Frontend: Vite dev server on port 3000
-  - Backend: Node.js server on port 3001
+  - Frontend: Vite dev server on port 3002
+  - Backend: Node.js server on port 3003
   - Use `./scripts/start-dev.sh status` to check running servers
   - Use `./scripts/start-dev.sh stop` to stop all servers
 - `npm run dev` - Start frontend only (backend must be started separately)
@@ -58,7 +58,7 @@ ssh pi@pi.local 'DISPLAY=:0 scrot /tmp/screen.png' && scp pi@pi.local:/tmp/scree
 
 **Key Files:**
 - Frontend: `/var/www/kiosk/dist/` (Nginx root)
-- Backend: `/var/www/kiosk/server/dist/` (Node.js on port 3001)
+- Backend: `/var/www/kiosk/server/dist/` (Node.js on port 3003)
 - Environment: `/var/www/kiosk/.env`
 - Runtime Data: `/var/www/kiosk/server/data/` (encrypted config, auth, machine secret)
 
@@ -214,7 +214,7 @@ curl http://localhost/api/health
 
 **Directory structure after deployment:**
 - Frontend: `/var/www/kiosk/dist/` (served by Nginx)
-- Backend: `/var/www/kiosk/server/` (Node.js on port 3001)
+- Backend: `/var/www/kiosk/server/` (Node.js on port 3003)
 - Environment: `/var/www/kiosk/.env`
 
 ### Fallback
