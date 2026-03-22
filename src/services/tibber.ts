@@ -264,6 +264,7 @@ export class TibberLiveConnection {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+  private lastMessageTime: number = 0;
 
   constructor(
     token: string,
@@ -295,6 +296,7 @@ export class TibberLiveConnection {
 
       this.ws.onmessage = (event) => {
         const message = JSON.parse(event.data);
+        this.lastMessageTime = Date.now();
 
         switch (message.type) {
           case 'connection_ack':
@@ -375,5 +377,16 @@ export class TibberLiveConnection {
 
   isConnected(): boolean {
     return this.ws?.readyState === WebSocket.OPEN;
+  }
+
+  getLastMessageTime(): number {
+    return this.lastMessageTime;
+  }
+
+  forceReconnect() {
+    console.log('[Tibber] Force reconnecting due to stale data');
+    this.reconnectAttempts = 0; // Reset counter
+    this.disconnect();
+    this.connect();
   }
 }

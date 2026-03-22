@@ -15,7 +15,7 @@ export function Electricity() {
   const gridFeeRate = config.electricity.gridFee;
 
   // Live consumption from Tibber Pulse
-  const { measurement, isConnected } = useLiveMeasurement(
+  const { measurement, isConnected, freshness, lastUpdateSeconds } = useLiveMeasurement(
     electricity?.homeId ?? null,
     electricity?.realTimeEnabled ?? false
   );
@@ -54,6 +54,27 @@ export function Electricity() {
     return `${Math.round(watts)} W`;
   };
 
+  // Get connection indicator color based on freshness
+  const getConnectionColor = () => {
+    if (!isConnected) return 'text-gray-500';
+    if (freshness === 'stale') return 'text-orange-500';
+    if (freshness === 'warning') return 'text-yellow-400';
+    return 'text-green-400';
+  };
+
+  // Get connection status text
+  const getConnectionStatus = () => {
+    if (!isConnected) return 'Kobler til...';
+    if (freshness === 'stale') return 'Kobler til på nytt...';
+    if (freshness === 'warning' && lastUpdateSeconds) {
+      return `Sist oppdatert ${lastUpdateSeconds}s siden`;
+    }
+    if (measurement) {
+      return `${measurement.accumulatedConsumption.toFixed(1)} kWh i dag`;
+    }
+    return 'Kobler til...';
+  };
+
   return (
     <div className="h-full w-full px-4 py-2 flex gap-4 bg-black/30 backdrop-blur border border-white/5 rounded-lg">
       {/* Current price - compact, scaled for 1080x1920 */}
@@ -82,15 +103,24 @@ export function Electricity() {
         <div className="flex-shrink-0 flex flex-col justify-center border-r border-gray-700 pr-4">
           <div className="text-gray-400 flex items-center gap-1" style={{ fontSize: '1.1rem' }}>
             Forbruk
-            {isConnected && <Circle size={11} fill="currentColor" className="text-green-400" />}
+            <Circle
+              size={11}
+              fill="currentColor"
+              className={getConnectionColor()}
+            />
           </div>
-          <div className="font-bold text-blue-400" style={{ fontSize: '2.8rem' }}>
+          <div
+            className="font-bold"
+            style={{
+              fontSize: '2.8rem',
+              opacity: freshness === 'stale' ? 0.5 : 1,
+              color: freshness === 'stale' ? '#9ca3af' : '#60a5fa',
+            }}
+          >
             {measurement ? formatPower(measurement.power) : '--'}
           </div>
           <div className="text-gray-400" style={{ fontSize: '1.1rem' }}>
-            {measurement
-              ? `${measurement.accumulatedConsumption.toFixed(1)} kWh i dag`
-              : 'Kobler til...'}
+            {getConnectionStatus()}
           </div>
         </div>
       )}

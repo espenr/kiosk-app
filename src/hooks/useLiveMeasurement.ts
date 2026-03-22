@@ -2,10 +2,17 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useConfig } from '../contexts/ConfigContext';
 import { TibberLiveConnection, LiveMeasurement } from '../services/tibber';
 
+const STALENESS_WARNING_MS = 30 * 1000;  // 30 seconds
+const STALENESS_ERROR_MS = 60 * 1000;    // 60 seconds
+
+export type DataFreshness = 'fresh' | 'warning' | 'stale';
+
 export interface UseLiveMeasurementResult {
   measurement: LiveMeasurement | null;
   isConnected: boolean;
   error: string | null;
+  freshness: DataFreshness;
+  lastUpdateSeconds: number | null;
 }
 
 /**
@@ -22,6 +29,8 @@ export function useLiveMeasurement(
   const [measurement, setMeasurement] = useState<LiveMeasurement | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [freshness, setFreshness] = useState<DataFreshness>('fresh');
+  const [lastUpdateSeconds, setLastUpdateSeconds] = useState<number | null>(null);
 
   const connectionRef = useRef<TibberLiveConnection | null>(null);
 
@@ -29,6 +38,7 @@ export function useLiveMeasurement(
     setMeasurement(data);
     setIsConnected(true);
     setError(null);
+    setFreshness('fresh');
   }, []);
 
   const handleError = useCallback((err: string) => {
@@ -58,5 +68,45 @@ export function useLiveMeasurement(
     };
   }, [token, homeId, realTimeEnabled, handleMeasurement, handleError]);
 
-  return { measurement, isConnected, error };
+  // Staleness detection and auto-reconnection
+  useEffect(() => {
+    if (!connectionRef.current || !isConnected) {
+      return;
+    }
+
+    const checkStaleness = () => {
+      const connection = connectionRef.current;
+      if (!connection) return;
+
+      const now = Date.now();
+      const lastMessageTime = connection.getLastMessageTime();
+
+      if (lastMessageTime === 0) {
+        setFreshness('fresh');
+        setLastUpdateSeconds(null);
+        return;
+      }
+
+      const timeSinceLastMessage = now - lastMessageTime;
+      const secondsSinceUpdate = Math.floor(timeSinceLastMessage / 1000);
+      setLastUpdateSeconds(secondsSinceUpdate);
+
+      if (timeSinceLastMessage > STALENESS_ERROR_MS) {
+        console.warn(`[LiveMeasurement] Data stale for ${secondsSinceUpdate}s, forcing reconnect`);
+        setFreshness('stale');
+        connection.forceReconnect();
+      } else if (timeSinceLastMessage > STALENESS_WARNING_MS) {
+        console.warn(`[LiveMeasurement] Data stale for ${secondsSinceUpdate}s (warning)`);
+        setFreshness('warning');
+      } else {
+        setFreshness('fresh');
+      }
+    };
+
+    checkStaleness();
+    const interval = setInterval(checkStaleness, 5000);
+    return () => clearInterval(interval);
+  }, [isConnected]);
+
+  return { measurement, isConnected, error, freshness, lastUpdateSeconds };
 }
