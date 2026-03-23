@@ -1,7 +1,7 @@
 import { useElectricity } from '@/hooks/useElectricity';
 import { useLiveMeasurement } from '@/hooks/useLiveMeasurement';
 import { useConfig } from '@/contexts/ConfigContext';
-import { formatPrice, getPriceLevelBgClass, getPriceLevelColor, getGridFee, getGridFeePeriod } from '@/services/tibber';
+import { formatPrice, getPriceLevelBgClass, getPriceLevelColor, getGridFee, getGridFeePeriod, ConnectionState } from '@/services/tibber';
 import { Sun, Moon, Circle } from '@/components/icons';
 
 /**
@@ -15,7 +15,7 @@ export function Electricity() {
   const gridFeeRate = config.electricity.gridFee;
 
   // Live consumption from Tibber Pulse
-  const { measurement, isConnected, freshness, lastUpdateSeconds } = useLiveMeasurement(
+  const { measurement, connectionState, freshness, lastUpdateSeconds } = useLiveMeasurement(
     electricity?.homeId ?? null,
     electricity?.realTimeEnabled ?? false
   );
@@ -54,25 +54,34 @@ export function Electricity() {
     return `${Math.round(watts)} W`;
   };
 
-  // Get connection indicator color based on freshness
+  // Get connection indicator color based on state and freshness
   const getConnectionColor = () => {
-    if (!isConnected) return 'text-gray-500';
-    if (freshness === 'stale') return 'text-orange-500';
+    if (connectionState === ConnectionState.DISCONNECTED) return 'text-gray-500';
+    if (connectionState === ConnectionState.ERROR) return 'text-red-500';
+    if (connectionState === ConnectionState.CONNECTING ||
+        connectionState === ConnectionState.OPEN ||
+        connectionState === ConnectionState.SUBSCRIBED) return 'text-yellow-400';
+    if (freshness === 'stale' || connectionState === ConnectionState.STALE) return 'text-orange-500';
     if (freshness === 'warning') return 'text-yellow-400';
-    return 'text-green-400';
+    return 'text-green-400'; // DATA_FLOWING
   };
 
   // Get connection status text
   const getConnectionStatus = () => {
-    if (!isConnected) return 'Kobler til...';
-    if (freshness === 'stale') return 'Kobler til på nytt...';
-    if (freshness === 'warning' && lastUpdateSeconds) {
-      return `Sist oppdatert ${lastUpdateSeconds}s siden`;
+    switch (connectionState) {
+      case ConnectionState.DISCONNECTED: return 'Ikke tilkoblet';
+      case ConnectionState.CONNECTING: return 'Kobler til...';
+      case ConnectionState.OPEN: return 'Autentiserer...';
+      case ConnectionState.SUBSCRIBED: return 'Venter på data...';
+      case ConnectionState.ERROR: return 'Tilkoblingsfeil';
+      case ConnectionState.STALE: return 'Kobler til på nytt...';
+      case ConnectionState.DATA_FLOWING:
+        if (freshness === 'warning' && lastUpdateSeconds) {
+          return `Sist oppdatert ${lastUpdateSeconds}s siden`;
+        }
+        return measurement ? `${measurement.accumulatedConsumption.toFixed(1)} kWh i dag` : 'Tilkoblet';
+      default: return 'Ukjent status';
     }
-    if (measurement) {
-      return `${measurement.accumulatedConsumption.toFixed(1)} kWh i dag`;
-    }
-    return 'Kobler til...';
   };
 
   return (

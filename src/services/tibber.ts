@@ -255,27 +255,72 @@ subscription LiveMeasurement($homeId: ID!) {
 export type LiveMeasurementCallback = (measurement: LiveMeasurement) => void;
 export type ErrorCallback = (error: string) => void;
 
+export enum ConnectionState {
+  DISCONNECTED = 'disconnected',
+  CONNECTING = 'connecting',
+  OPEN = 'open',
+  SUBSCRIBED = 'subscribed',
+  DATA_FLOWING = 'data_flowing',
+  STALE = 'stale',
+  ERROR = 'error',
+}
+
+export type StateChangeCallback = (state: ConnectionState) => void;
+
 export class TibberLiveConnection {
   private ws: WebSocket | null = null;
   private token: string;
   private homeId: string;
   private onMeasurement: LiveMeasurementCallback;
   private onError: ErrorCallback;
+  private onStateChange: StateChangeCallback;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
   private lastMessageTime: number = 0;
+  private connectionState: ConnectionState = ConnectionState.DISCONNECTED;
+  private stateTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     token: string,
     homeId: string,
     onMeasurement: LiveMeasurementCallback,
-    onError: ErrorCallback
+    onError: ErrorCallback,
+    onStateChange: StateChangeCallback
   ) {
     this.token = token;
     this.homeId = homeId;
     this.onMeasurement = onMeasurement;
     this.onError = onError;
+    this.onStateChange = onStateChange;
+  }
+
+  private transitionToState(newState: ConnectionState, reason?: string) {
+    if (this.connectionState === newState) return;
+
+    console.log(`[Tibber] State: ${this.connectionState} → ${newState}${reason ? ` (${reason})` : ''}`);
+    this.connectionState = newState;
+    this.onStateChange(newState);
+
+    // Clear existing timeout
+    if (this.stateTimeoutId) {
+      clearTimeout(this.stateTimeoutId);
+      this.stateTimeoutId = null;
+    }
+
+    // Set timeout for hanging states
+    const timeouts = {
+      [ConnectionState.CONNECTING]: 15000,   // 15s to open WebSocket
+      [ConnectionState.OPEN]: 15000,         // 15s to get connection_ack
+      [ConnectionState.SUBSCRIBED]: 30000,   // 30s to get first data
+    };
+
+    if (newState in timeouts) {
+      this.stateTimeoutId = setTimeout(() => {
+        console.warn(`[Tibber] Timeout in ${newState} state, forcing reconnect`);
+        this.transitionToState(ConnectionState.ERROR, `timeout in ${newState}`);
+        this.forceReconnect();
+      }, timeouts[newState as keyof typeof timeouts]);
+    }
   }
 
   connect() {
@@ -284,9 +329,11 @@ export class TibberLiveConnection {
     }
 
     try {
+      this.transitionToState(ConnectionState.CONNECTING);
       this.ws = new WebSocket(WS_ENDPOINT, 'graphql-transport-ws');
 
       this.ws.onopen = () => {
+        this.transitionToState(ConnectionState.OPEN, 'WebSocket opened');
         // Send connection init with token
         this.ws?.send(JSON.stringify({
           type: 'connection_init',
@@ -300,6 +347,7 @@ export class TibberLiveConnection {
 
         switch (message.type) {
           case 'connection_ack':
+            this.transitionToState(ConnectionState.SUBSCRIBED, 'connection_ack received');
             // Connection acknowledged, send subscription
             this.ws?.send(JSON.stringify({
               id: '1',
@@ -315,6 +363,7 @@ export class TibberLiveConnection {
           case 'next':
             // Received data
             if (message.payload?.data?.liveMeasurement) {
+              this.transitionToState(ConnectionState.DATA_FLOWING, 'first measurement received');
               const data = message.payload.data.liveMeasurement;
               this.onMeasurement({
                 timestamp: new Date(data.timestamp),
@@ -327,6 +376,7 @@ export class TibberLiveConnection {
             break;
 
           case 'error':
+            this.transitionToState(ConnectionState.ERROR, message.payload?.message);
             this.onError(message.payload?.message || 'WebSocket error');
             break;
 
@@ -337,10 +387,12 @@ export class TibberLiveConnection {
       };
 
       this.ws.onerror = () => {
+        this.transitionToState(ConnectionState.ERROR, 'WebSocket error');
         this.onError('WebSocket connection error');
       };
 
       this.ws.onclose = () => {
+        this.transitionToState(ConnectionState.DISCONNECTED, 'WebSocket closed');
         this.ws = null;
         this.scheduleReconnect();
       };
@@ -350,11 +402,7 @@ export class TibberLiveConnection {
   }
 
   private scheduleReconnect() {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      this.onError('Max reconnection attempts reached');
-      return;
-    }
-
+    // Remove max reconnection attempts - always retry with exponential backoff
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
     this.reconnectAttempts++;
 
@@ -367,6 +415,11 @@ export class TibberLiveConnection {
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
+    }
+
+    if (this.stateTimeoutId) {
+      clearTimeout(this.stateTimeoutId);
+      this.stateTimeoutId = null;
     }
 
     if (this.ws) {
@@ -383,8 +436,13 @@ export class TibberLiveConnection {
     return this.lastMessageTime;
   }
 
+  getConnectionState(): ConnectionState {
+    return this.connectionState;
+  }
+
   forceReconnect() {
     console.log('[Tibber] Force reconnecting due to stale data');
+    this.transitionToState(ConnectionState.STALE, 'data stale, forcing reconnect');
     this.reconnectAttempts = 0; // Reset counter
     this.disconnect();
     this.connect();

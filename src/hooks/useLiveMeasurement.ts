@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useConfig } from '../contexts/ConfigContext';
-import { TibberLiveConnection, LiveMeasurement } from '../services/tibber';
+import { TibberLiveConnection, LiveMeasurement, ConnectionState } from '../services/tibber';
 
 const STALENESS_WARNING_MS = 30 * 1000;  // 30 seconds
 const STALENESS_ERROR_MS = 60 * 1000;    // 60 seconds
@@ -9,7 +9,7 @@ export type DataFreshness = 'fresh' | 'warning' | 'stale';
 
 export interface UseLiveMeasurementResult {
   measurement: LiveMeasurement | null;
-  isConnected: boolean;
+  connectionState: ConnectionState;
   error: string | null;
   freshness: DataFreshness;
   lastUpdateSeconds: number | null;
@@ -27,7 +27,7 @@ export function useLiveMeasurement(
   const token = config.apiKeys.tibber;
 
   const [measurement, setMeasurement] = useState<LiveMeasurement | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
+  const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.DISCONNECTED);
   const [error, setError] = useState<string | null>(null);
   const [freshness, setFreshness] = useState<DataFreshness>('fresh');
   const [lastUpdateSeconds, setLastUpdateSeconds] = useState<number | null>(null);
@@ -36,14 +36,20 @@ export function useLiveMeasurement(
 
   const handleMeasurement = useCallback((data: LiveMeasurement) => {
     setMeasurement(data);
-    setIsConnected(true);
     setError(null);
     setFreshness('fresh');
   }, []);
 
   const handleError = useCallback((err: string) => {
     setError(err);
-    setIsConnected(false);
+  }, []);
+
+  const handleStateChange = useCallback((state: ConnectionState) => {
+    setConnectionState(state);
+    if (state === ConnectionState.DATA_FLOWING) {
+      setError(null);
+      setFreshness('fresh');
+    }
   }, []);
 
   useEffect(() => {
@@ -57,7 +63,8 @@ export function useLiveMeasurement(
       token,
       homeId,
       handleMeasurement,
-      handleError
+      handleError,
+      handleStateChange
     );
     connectionRef.current.connect();
 
@@ -66,11 +73,11 @@ export function useLiveMeasurement(
       connectionRef.current?.disconnect();
       connectionRef.current = null;
     };
-  }, [token, homeId, realTimeEnabled, handleMeasurement, handleError]);
+  }, [token, homeId, realTimeEnabled, handleMeasurement, handleError, handleStateChange]);
 
   // Staleness detection and auto-reconnection
   useEffect(() => {
-    if (!connectionRef.current || !isConnected) {
+    if (!connectionRef.current || connectionState !== ConnectionState.DATA_FLOWING) {
       return;
     }
 
@@ -106,7 +113,7 @@ export function useLiveMeasurement(
     checkStaleness();
     const interval = setInterval(checkStaleness, 5000);
     return () => clearInterval(interval);
-  }, [isConnected]);
+  }, [connectionState]);
 
-  return { measurement, isConnected, error, freshness, lastUpdateSeconds };
+  return { measurement, connectionState, error, freshness, lastUpdateSeconds };
 }
