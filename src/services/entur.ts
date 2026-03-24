@@ -18,6 +18,8 @@ export interface Departure {
   expectedTime: Date;
   isRealtime: boolean;
   quayName?: string;
+  cancelled?: boolean;
+  cancellationReason?: string;
 }
 
 export interface StopPlaceSuggestion {
@@ -33,6 +35,10 @@ export interface StopPlaceSuggestion {
   categories: string[];
 }
 
+interface EnturNotice {
+  text: string;
+}
+
 interface EnturEstimatedCall {
   expectedDepartureTime: string;
   aimedDepartureTime: string;
@@ -46,10 +52,12 @@ interface EnturEstimatedCall {
       name: string;
       transportMode: string;
     };
+    notices?: EnturNotice[];
   };
   quay: {
     name: string;
   };
+  notices?: EnturNotice[];
 }
 
 interface EnturStopPlaceResponse {
@@ -83,9 +91,15 @@ query GetDepartures($stopPlaceId: String!, $numberOfDepartures: Int!) {
           name
           transportMode
         }
+        notices {
+          text
+        }
       }
       quay {
         name
+      }
+      notices {
+        text
       }
     }
   }
@@ -124,15 +138,33 @@ export async function fetchDepartures(
     return [];
   }
 
-  return result.data.stopPlace.estimatedCalls.map((call) => ({
-    line: call.serviceJourney.line.publicCode,
-    lineName: call.serviceJourney.line.name,
-    destination: call.destinationDisplay.frontText,
-    scheduledTime: new Date(call.aimedDepartureTime),
-    expectedTime: new Date(call.expectedDepartureTime),
-    isRealtime: call.realtime,
-    quayName: call.quay.name,
-  }));
+  return result.data.stopPlace.estimatedCalls.map((call) => {
+    // Collect all notices (call-level and journey-level)
+    const allNotices = [
+      ...(call.notices || []),
+      ...(call.serviceJourney?.notices || []),
+    ];
+
+    // Detect cancellation keywords in Norwegian and English
+    const cancellationNotice = allNotices.find(n => {
+      const text = n.text?.toLowerCase() || '';
+      return text.includes('avlyst') ||
+             text.includes('innstilt') ||
+             text.includes('cancelled');
+    });
+
+    return {
+      line: call.serviceJourney.line.publicCode,
+      lineName: call.serviceJourney.line.name,
+      destination: call.destinationDisplay.frontText,
+      scheduledTime: new Date(call.aimedDepartureTime),
+      expectedTime: new Date(call.expectedDepartureTime),
+      isRealtime: call.realtime,
+      quayName: call.quay.name,
+      cancelled: !!cancellationNotice,
+      cancellationReason: cancellationNotice?.text,
+    };
+  });
 }
 
 /**
@@ -151,6 +183,30 @@ export async function fetchDeparturesFromMultipleStops(
   merged.sort((a, b) => a.expectedTime.getTime() - b.expectedTime.getTime());
 
   return merged;
+}
+
+/**
+ * Calculate delay in minutes (expectedTime - scheduledTime)
+ * Returns null if no significant delay, positive number for late, negative for early
+ */
+export function calculateDelay(scheduledTime: Date, expectedTime: Date): number | null {
+  const diffMs = expectedTime.getTime() - scheduledTime.getTime();
+  const diffMinutes = Math.round(diffMs / 60000);
+
+  // Only show delay if significant (>=1 min difference)
+  return Math.abs(diffMinutes) >= 1 ? diffMinutes : null;
+}
+
+/**
+ * Format delay as human-readable string
+ */
+export function formatDelay(delayMinutes: number): string {
+  if (delayMinutes > 0) {
+    return `+${delayMinutes} min`;
+  } else if (delayMinutes < 0) {
+    return `${delayMinutes} min`; // Already has minus sign
+  }
+  return 'I rute'; // On time
 }
 
 /**
