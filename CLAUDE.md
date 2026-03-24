@@ -555,9 +555,9 @@ Implementation history: [`/docs/archive/implementation-history/`](./docs/archive
 
 ### Photo Widget Issues
 
-**Symptom:** Photo widget shows JSON parsing error or "Unexpected token '<', '<!DOCTYPE' is not valid JSON"
+**Symptom:** Photo widget shows error message (e.g., "Invalid response type: text/html (expected JSON)" or older "Unexpected token '<'")
 
-**Root Cause:** Browser cached an error from when backend was temporarily unavailable (e.g., during deployment or restart). Frontend received HTML error page instead of JSON.
+**Root Cause:** Backend unavailable or returning HTML error pages (502/504 from Nginx). The frontend now detects this before attempting JSON parsing and shows a clear error message.
 
 **Immediate Fix:**
 ```bash
@@ -598,19 +598,26 @@ curl http://localhost:3001/api/photos | jq '.photos | length'
 **Why This Happens:**
 1. During deployment or backend restart, there's a brief window where backend is unavailable
 2. If frontend requests photos during this window, Nginx returns HTML error page (502/504)
-3. Frontend tries to parse HTML as JSON → error gets cached
-4. Even after backend recovers, browser shows cached error until hard refresh
+3. Frontend detects invalid Content-Type and shows clear error message
+4. Automatic recovery attempts every 60 seconds
 
-**Prevention:**
-The deployment script (`scripts/auto-update.sh`) now:
+**Protection Layers:**
+The deployment script (`scripts/auto-update.sh`):
 - Restarts backend systemd service
 - Waits for health check (max 30s)
 - Only sends browser refresh AFTER backend is confirmed healthy
 
-Frontend now includes:
+Frontend includes defense-in-depth validation (`src/services/photos.ts`):
+- **Layer 1**: Content-Type validation (rejects HTML responses before parsing)
+- **Layer 2**: JSON parse error handling (detailed error messages with response preview)
+- **Layer 3**: Response structure validation (ensures valid photo data)
 - Retry logic with exponential backoff (3 attempts: 2s, 4s, 8s delays)
 - Automatic error recovery (retries every 60s when in error state)
-- Better error messages distinguishing network vs server issues
+
+**Error Messages:**
+- `Invalid response type: text/html (expected JSON)` - Backend returned HTML (502/504 error page)
+- `JSON parse error: ...` - Response was JSON but malformed (should be rare)
+- `API error: 500/502/504` - Backend unavailable or crashed
 
 ### Backend Service Issues
 

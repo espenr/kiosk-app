@@ -67,7 +67,21 @@ export async function fetchPhotos(): Promise<PhotosData> {
       throw new Error(`API error: ${response.status}`);
     }
 
-    const data: ApiResponse = await response.json();
+    // Layer 1: Content-Type validation (prevent parsing HTML as JSON)
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error(`Invalid response type: ${contentType || 'none'} (expected JSON)`);
+    }
+
+    // Layer 2: JSON parse error handling with detailed error message
+    let data: ApiResponse;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      const text = await response.clone().text().catch(() => 'Unable to read response');
+      const preview = text.substring(0, 100);
+      throw new Error(`JSON parse error: ${(parseError as Error).message}. Response preview: ${preview}...`);
+    }
 
     if (data.error) {
       throw new Error(data.error);
@@ -110,7 +124,21 @@ export async function fetchPhotos(): Promise<PhotosData> {
       throw new Error(`Kunne ikke hente bilder: ${response.status}`);
     }
 
-    const data: Photo[] = await response.json();
+    // Layer 1: Content-Type validation for fallback path
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error(`Invalid fallback response type: ${contentType || 'none'} (expected JSON)`);
+    }
+
+    // Layer 2: JSON parse error handling for fallback path
+    let data: Photo[];
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      const text = await response.clone().text().catch(() => 'Unable to read response');
+      const preview = text.substring(0, 100);
+      throw new Error(`Fallback JSON parse error: ${(parseError as Error).message}. Response preview: ${preview}...`);
+    }
 
     if (!Array.isArray(data) || data.length === 0) {
       throw new Error('Ingen bilder funnet i albumet');
