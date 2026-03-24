@@ -550,3 +550,92 @@ bash /var/www/kiosk/scripts/kiosk-admin status
 Full plan: [`/docs/plans/admin-view.md`](./docs/plans/admin-view.md)
 
 Implementation history: [`/docs/archive/implementation-history/`](./docs/archive/implementation-history/)
+
+## Troubleshooting
+
+### Photo Widget Issues
+
+**Symptom:** Photo widget shows JSON parsing error or "Unexpected token '<', '<!DOCTYPE' is not valid JSON"
+
+**Root Cause:** Browser cached an error from when backend was temporarily unavailable (e.g., during deployment or restart). Frontend received HTML error page instead of JSON.
+
+**Immediate Fix:**
+```bash
+# Hard refresh browser to clear cached error
+ssh pi@pi.local 'DISPLAY=:0 xdotool key --clearmodifiers ctrl+F5'
+
+# Wait 5 seconds and verify photos display
+sleep 5
+ssh pi@pi.local 'DISPLAY=:0 scrot /tmp/screen.png' && scp pi@pi.local:/tmp/screen.png /tmp/kiosk-screenshot.png
+```
+
+**Check Backend Health:**
+```bash
+# From development machine
+./scripts/kiosk-service.sh backend-health
+
+# Or directly on Pi
+ssh pi@pi.local
+systemctl status kiosk-photos.service
+curl http://localhost:3001/api/health
+curl http://localhost:3001/api/photos | jq '.photos | length'
+```
+
+**Backend Management:**
+```bash
+# View backend logs
+./scripts/kiosk-service.sh backend-logs
+# Or: ssh pi@pi.local 'journalctl -u kiosk-photos.service -n 50'
+
+# Restart backend
+./scripts/kiosk-service.sh backend-restart
+# Or: ssh pi@pi.local 'sudo systemctl restart kiosk-photos.service'
+
+# Check backend status
+./scripts/kiosk-service.sh backend-status
+```
+
+**Why This Happens:**
+1. During deployment or backend restart, there's a brief window where backend is unavailable
+2. If frontend requests photos during this window, Nginx returns HTML error page (502/504)
+3. Frontend tries to parse HTML as JSON → error gets cached
+4. Even after backend recovers, browser shows cached error until hard refresh
+
+**Prevention:**
+The deployment script (`scripts/auto-update.sh`) now:
+- Restarts backend systemd service
+- Waits for health check (max 30s)
+- Only sends browser refresh AFTER backend is confirmed healthy
+
+Frontend now includes:
+- Retry logic with exponential backoff (3 attempts: 2s, 4s, 8s delays)
+- Automatic error recovery (retries every 60s when in error state)
+- Better error messages distinguishing network vs server issues
+
+### Backend Service Issues
+
+**Service not running:**
+```bash
+# Check service status
+systemctl status kiosk-photos.service
+
+# Start service
+sudo systemctl start kiosk-photos.service
+
+# Check logs for errors
+journalctl -u kiosk-photos.service -n 50
+```
+
+**Port 3001 not listening:**
+```bash
+# Check what's using the port
+ss -tlnp | grep 3001
+
+# If nothing, check backend logs
+journalctl -u kiosk-photos.service -f
+```
+
+**Photos endpoint returns empty array:**
+- Check iCloud album URL is configured in `/var/www/kiosk/.env`
+- Verify `ICLOUD_ALBUM_URL` environment variable is set
+- Check backend logs for iCloud API errors

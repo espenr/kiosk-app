@@ -18,6 +18,8 @@ export interface UsePhotosResult {
 const CACHE_DURATION = 45 * 60 * 1000;
 // Check for new photos every 10 minutes (server cache handles freshness)
 const REFRESH_INTERVAL = 10 * 60 * 1000;
+// Retry failed fetches every 60 seconds
+const ERROR_RETRY_INTERVAL = 60 * 1000;
 
 let cachedPhotos: PhotosData | null = null;
 let cacheTimestamp = 0;
@@ -48,6 +50,7 @@ export function usePhotos(): UsePhotosResult {
     }
 
     setIsLoading(true);
+    const hadError = error !== null; // Capture at call time to avoid stale closure
     setError(null);
 
     try {
@@ -55,6 +58,11 @@ export function usePhotos(): UsePhotosResult {
       cachedPhotos = data;
       cacheTimestamp = Date.now();
       setPhotos(data.photos);
+
+      // Clear error on successful fetch (automatic recovery)
+      if (hadError) {
+        console.log('[Photos] Automatically recovered from error');
+      }
       setError(null);
 
       // Initialize to random index on first load, or keep current if valid
@@ -67,16 +75,19 @@ export function usePhotos(): UsePhotosResult {
         return prev >= data.photos.length ? 0 : prev;
       });
     } catch (err) {
-      console.error('Photos fetch error:', err);
-      setError(err instanceof Error ? err.message : 'Kunne ikke hente bilder');
-      // Keep showing old photos if available
+      console.error('[Photos] Fetch error (will retry):', err);
+      const errorMessage = err instanceof Error ? err.message : 'Kunne ikke hente bilder';
+      setError(errorMessage);
+
+      // Keep showing old photos if available (don't break slideshow)
       if (cachedPhotos) {
+        console.log('[Photos] Using cached photos while retrying...');
         setPhotos(cachedPhotos.photos);
       }
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [error]);
 
   // Initial fetch
   useEffect(() => {
@@ -84,13 +95,16 @@ export function usePhotos(): UsePhotosResult {
   }, [fetchData]);
 
   // Auto-refresh to pick up new photos
+  // If there's an error, retry more frequently to recover automatically
   useEffect(() => {
+    const interval = error ? ERROR_RETRY_INTERVAL : REFRESH_INTERVAL;
+
     const refreshInterval = setInterval(() => {
       fetchData(true);
-    }, REFRESH_INTERVAL);
+    }, interval);
 
     return () => clearInterval(refreshInterval);
-  }, [fetchData]);
+  }, [fetchData, error]);
 
   // Preload next image for smooth transitions
   const preloadNext = useCallback(

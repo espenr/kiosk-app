@@ -30,12 +30,16 @@ Commands:
     cursor-status   Check if cursor is hidden (unclutter status)
     hide-cursor     Start unclutter service to hide cursor
     show-cursor     Stop unclutter service (for debugging)
+    backend-status  Check backend service status
+    backend-logs    View backend service logs
+    backend-restart Restart backend service
+    backend-health  Test backend health endpoint
 
 Examples:
     $0 status
     $0 restart
     $0 logs
-    $0 cursor-status
+    $0 backend-health
 EOF
     exit 1
 }
@@ -155,6 +159,72 @@ cmd_show_cursor() {
     echo -e "${GREEN}Service stopped - cursor will be visible${NC}"
 }
 
+cmd_backend_status() {
+    echo -e "${YELLOW}=== Backend Service Status ===${NC}"
+    run_ssh "systemctl status kiosk-photos.service | head -20"
+}
+
+cmd_backend_logs() {
+    echo -e "${YELLOW}=== Backend Service Logs (following...) ===${NC}"
+    echo -e "${YELLOW}Press Ctrl+C to exit${NC}\n"
+    run_ssh "journalctl -u kiosk-photos.service -f"
+}
+
+cmd_backend_restart() {
+    echo -e "${YELLOW}Restarting backend service...${NC}"
+    run_ssh "sudo systemctl restart kiosk-photos.service"
+    echo -e "${GREEN}Service restarted${NC}"
+    sleep 2
+    cmd_backend_health
+}
+
+cmd_backend_health() {
+    echo -e "${YELLOW}=== Backend Health Check ===${NC}"
+    run_ssh "
+        # Check service status
+        if systemctl is-active --quiet kiosk-photos.service; then
+            echo '${GREEN}✓ Backend service is running${NC}'
+        else
+            echo '${RED}✗ Backend service is not running${NC}'
+            exit 1
+        fi
+
+        # Check port
+        if ss -tlnp 2>/dev/null | grep -q ':3001'; then
+            echo '${GREEN}✓ Port 3001 is listening${NC}'
+        else
+            echo '${RED}✗ Port 3001 is not listening${NC}'
+        fi
+
+        # Test health endpoint
+        echo ''
+        echo '${YELLOW}Testing endpoints:${NC}'
+
+        if curl -sf http://localhost:3001/api/health > /dev/null 2>&1; then
+            echo '${GREEN}✓ /api/health responding${NC}'
+        else
+            echo '${RED}✗ /api/health not responding${NC}'
+        fi
+
+        PHOTO_COUNT=\$(curl -sf http://localhost:3001/api/photos 2>/dev/null | grep -o '\"photos\":\\[' | wc -l)
+        if [ \"\$PHOTO_COUNT\" -gt 0 ]; then
+            TOTAL_PHOTOS=\$(curl -sf http://localhost:3001/api/photos 2>/dev/null | grep -o '\"url\":' | wc -l)
+            echo \"${GREEN}✓ /api/photos responding (\$TOTAL_PHOTOS photos)${NC}\"
+        else
+            echo '${RED}✗ /api/photos not responding${NC}'
+        fi
+
+        CAL_STATUS=\$(curl -sf -o /dev/null -w '%{http_code}' http://localhost:3001/api/calendar/events 2>/dev/null || echo '000')
+        if [ \"\$CAL_STATUS\" == \"200\" ]; then
+            echo \"${GREEN}✓ /api/calendar/events responding (HTTP 200)${NC}\"
+        elif [ \"\$CAL_STATUS\" == \"401\" ] || [ \"\$CAL_STATUS\" == \"500\" ]; then
+            echo \"${YELLOW}⚠ /api/calendar/events responding (HTTP \$CAL_STATUS - config issue)${NC}\"
+        else
+            echo \"${RED}✗ /api/calendar/events not responding (HTTP \$CAL_STATUS)${NC}\"
+        fi
+    "
+}
+
 # Main command handler
 case "${1:-}" in
     status)
@@ -189,6 +259,18 @@ case "${1:-}" in
         ;;
     show-cursor)
         cmd_show_cursor
+        ;;
+    backend-status)
+        cmd_backend_status
+        ;;
+    backend-logs)
+        cmd_backend_logs
+        ;;
+    backend-restart)
+        cmd_backend_restart
+        ;;
+    backend-health)
+        cmd_backend_health
         ;;
     *)
         usage

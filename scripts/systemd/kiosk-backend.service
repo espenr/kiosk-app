@@ -1,0 +1,21 @@
+[Unit]
+Description=Kiosk Backend Server (Photos, Calendar, Config)
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/var/www/kiosk/server
+ExecStart=/usr/bin/node /var/www/kiosk/server/dist/index.js
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+Environment="NODE_ENV=production"
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

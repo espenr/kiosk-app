@@ -24,13 +24,44 @@ interface ApiResponse {
 }
 
 /**
+ * Fetch with exponential backoff retry logic
+ */
+async function fetchWithRetry(
+  url: string,
+  maxRetries = 3,
+  baseDelay = 2000
+): Promise<Response> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await fetch(url);
+      return response; // Success
+    } catch (err) {
+      lastError = err as Error;
+
+      if (attempt < maxRetries - 1) {
+        const delay = baseDelay * Math.pow(2, attempt); // Exponential backoff: 2s, 4s, 8s
+        console.warn(
+          `[Photos] Fetch failed (attempt ${attempt + 1}/${maxRetries}), retrying in ${delay}ms...`,
+          err
+        );
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  throw lastError || new Error('Fetch failed after retries');
+}
+
+/**
  * Fetch photos from the backend proxy API
  * Falls back to static photos.json for backwards compatibility
  */
 export async function fetchPhotos(): Promise<PhotosData> {
   try {
-    // Try the API endpoint first
-    const response = await fetch('/api/photos');
+    // Try the API endpoint first with retry logic
+    const response = await fetchWithRetry('/api/photos', 3, 2000);
 
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
