@@ -4,6 +4,8 @@ import App from './App';
 import { AppContextProvider } from './contexts/AppContextProvider';
 import ThemeWrapper from './components/theme/ThemeWrapper';
 import { checkVersionAndClearCache } from './utils/versionBootstrap';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { setupGlobalErrorHandlers } from './utils/errorRecovery';
 import './index.css';
 
 /**
@@ -11,6 +13,9 @@ import './index.css';
  * Clears localStorage if version changed to ensure clean start
  */
 async function bootstrap() {
+  // Setup global error handlers
+  setupGlobalErrorHandlers();
+
   // Check version and clear cache if needed (before mounting React)
   await checkVersionAndClearCache();
 
@@ -25,11 +30,13 @@ async function bootstrap() {
   /* eslint-disable @typescript-eslint/no-explicit-any */
   ReactDOM.createRoot(rootElement).render(
     (<React.StrictMode>
-      {(<AppContextProvider>
-        {(<ThemeWrapper>
-          {(<App />) as any}
-        </ThemeWrapper>) as any}
-      </AppContextProvider>) as any}
+      {(<ErrorBoundary>
+        {(<AppContextProvider>
+          {(<ThemeWrapper>
+            {(<App />) as any}
+          </ThemeWrapper>) as any}
+        </AppContextProvider>) as any}
+      </ErrorBoundary>) as any}
     </React.StrictMode>) as any
   );
   /* eslint-enable @typescript-eslint/no-explicit-any */

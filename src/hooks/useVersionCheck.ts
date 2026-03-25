@@ -2,6 +2,28 @@ import { useEffect, useRef } from 'react';
 import { checkVersion } from '@/services/version';
 
 const VERSION_KEY = '__kiosk_app_version__';
+const WATCHDOG_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+let lastHeartbeat = Date.now();
+let watchdogInterval: number | null = null;
+
+/**
+ * Setup watchdog timer to detect UI freeze
+ */
+function setupWatchdog() {
+  if (watchdogInterval) return watchdogInterval;
+
+  watchdogInterval = window.setInterval(() => {
+    const timeSinceHeartbeat = Date.now() - lastHeartbeat;
+
+    if (timeSinceHeartbeat > WATCHDOG_TIMEOUT_MS) {
+      console.error('[Watchdog] No heartbeat for 5 minutes, app may be frozen. Reloading...');
+      if (watchdogInterval) clearInterval(watchdogInterval);
+      window.location.reload();
+    }
+  }, 60000); // Check every minute
+
+  return watchdogInterval;
+}
 
 /**
  * Hook to check for version updates and reload page when new version is deployed
@@ -16,12 +38,17 @@ export function useVersionCheck() {
       const version = await checkVersion();
       currentVersionRef.current = version;
       console.log('Initial version:', version);
+      lastHeartbeat = Date.now(); // Update watchdog
     };
 
     initVersion();
 
+    // Setup watchdog timer
+    const watchdog = setupWatchdog();
+
     // Poll for version changes every 30 seconds
     const interval = setInterval(async () => {
+      lastHeartbeat = Date.now(); // Update watchdog heartbeat
       const newVersion = await checkVersion();
 
       // If we have a current version and it changed, reload the page
@@ -47,6 +74,9 @@ export function useVersionCheck() {
       }
     }, 30000); // Check every 30 seconds
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (watchdog) clearInterval(watchdog);
+    };
   }, []);
 }

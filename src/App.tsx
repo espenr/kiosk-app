@@ -7,6 +7,8 @@ import { Electricity } from './components/sections/Electricity/Electricity';
 import { Transport } from './components/sections/Transport/Transport';
 import AdminRouter from './components/admin/AdminRouter';
 import { useVersionCheck } from './hooks/useVersionCheck';
+import { usePageVisibility } from './hooks/usePageVisibility';
+import { useServiceRecovery } from './hooks/useServiceRecovery';
 
 function Dashboard() {
   return (
@@ -28,6 +30,15 @@ function Dashboard() {
 function App() {
   // Check for version updates and reload when new version deployed
   useVersionCheck();
+
+  const { checkAndRecover } = useServiceRecovery();
+
+  usePageVisibility({
+    onVisible: () => {
+      console.log('[App] Page visible, checking services...');
+      checkAndRecover();
+    },
+  });
 
   return (
     <Router>

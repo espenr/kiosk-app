@@ -323,6 +323,22 @@ export class TibberLiveConnection {
     }
   }
 
+  private safeSend(message: object): boolean {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      console.warn('[Tibber] Cannot send message, WebSocket not ready (state: ' +
+        (this.ws?.readyState ?? 'null') + ')');
+      return false;
+    }
+
+    try {
+      this.ws.send(JSON.stringify(message));
+      return true;
+    } catch (err) {
+      console.error('[Tibber] Send failed:', err);
+      return false;
+    }
+  }
+
   connect() {
     if (this.ws) {
       this.disconnect();
@@ -335,10 +351,10 @@ export class TibberLiveConnection {
       this.ws.onopen = () => {
         this.transitionToState(ConnectionState.OPEN, 'WebSocket opened');
         // Send connection init with token
-        this.ws?.send(JSON.stringify({
+        this.safeSend({
           type: 'connection_init',
           payload: { token: this.token },
-        }));
+        });
       };
 
       this.ws.onmessage = (event) => {
@@ -349,14 +365,14 @@ export class TibberLiveConnection {
           case 'connection_ack':
             this.transitionToState(ConnectionState.SUBSCRIBED, 'connection_ack received');
             // Connection acknowledged, send subscription
-            this.ws?.send(JSON.stringify({
+            this.safeSend({
               id: '1',
               type: 'subscribe',
               payload: {
                 query: LIVE_MEASUREMENT_SUBSCRIPTION,
                 variables: { homeId: this.homeId },
               },
-            }));
+            });
             this.reconnectAttempts = 0;
             break;
 
