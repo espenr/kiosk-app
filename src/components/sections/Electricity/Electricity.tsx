@@ -15,10 +15,17 @@ export function Electricity() {
   const gridFeeRate = config.electricity.gridFee;
 
   // Live consumption from Tibber Pulse
-  const { measurement, connectionState, freshness, lastUpdateSeconds } = useLiveMeasurement(
+  const { measurement, connectionState, freshness, lastUpdateSeconds, connectionRef } = useLiveMeasurement(
     electricity?.homeId ?? null,
     electricity?.realTimeEnabled ?? false
   );
+
+  // Expose connection ref for service recovery (Phase 1.1)
+  // Store in a global that App.tsx can access
+  if (typeof window !== 'undefined') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).__tibberConnectionRef = connectionRef;
+  }
 
   // Get today's prices (midnight to midnight) with time-based grid fee added
   const todayPrices = (electricity?.today ?? []).map(p => ({

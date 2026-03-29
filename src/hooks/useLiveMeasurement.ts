@@ -13,6 +13,7 @@ export interface UseLiveMeasurementResult {
   error: string | null;
   freshness: DataFreshness;
   lastUpdateSeconds: number | null;
+  connectionRef: TibberLiveConnection | null; // Expose connection for force reconnect
 }
 
 /**
@@ -115,5 +116,12 @@ export function useLiveMeasurement(
     return () => clearInterval(interval);
   }, [connectionState]);
 
-  return { measurement, connectionState, error, freshness, lastUpdateSeconds };
+  return {
+    measurement,
+    connectionState,
+    error,
+    freshness,
+    lastUpdateSeconds,
+    connectionRef: connectionRef.current, // Expose connection for force reconnect
+  };
 }

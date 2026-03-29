@@ -31,7 +31,16 @@ function App() {
   // Check for version updates and reload when new version deployed
   useVersionCheck();
 
-  const { checkAndRecover } = useServiceRecovery();
+  // Phase 1.1: Pass Tibber connection ref for explicit reconnection on page visibility
+  const getTibberConnection = () => {
+    if (typeof window !== 'undefined') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (window as any).__tibberConnectionRef || null;
+    }
+    return null;
+  };
+
+  const { checkAndRecover } = useServiceRecovery(getTibberConnection());
 
   usePageVisibility({
     onVisible: () => {

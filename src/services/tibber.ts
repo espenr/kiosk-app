@@ -301,17 +301,23 @@ export class TibberLiveConnection {
     this.connectionState = newState;
     this.onStateChange(newState);
 
+    // Log connection failures for debugging (Phase 1.3)
+    if (newState === ConnectionState.ERROR || newState === ConnectionState.DISCONNECTED) {
+      const nextDelay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+      console.log(`[Tibber] Connection failed: ${reason || 'unknown reason'}, attempt #${this.reconnectAttempts}, next delay: ${nextDelay}ms`);
+    }
+
     // Clear existing timeout
     if (this.stateTimeoutId) {
       clearTimeout(this.stateTimeoutId);
       this.stateTimeoutId = null;
     }
 
-    // Set timeout for hanging states
+    // Set timeout for hanging states (Phase 1.2: increased timeouts for reliability)
     const timeouts = {
-      [ConnectionState.CONNECTING]: 15000,   // 15s to open WebSocket
-      [ConnectionState.OPEN]: 15000,         // 15s to get connection_ack
-      [ConnectionState.SUBSCRIBED]: 30000,   // 30s to get first data
+      [ConnectionState.CONNECTING]: 25000,   // 15s → 25s (more time to establish WebSocket)
+      [ConnectionState.OPEN]: 25000,         // 15s → 25s (more time for auth/connection_ack)
+      [ConnectionState.SUBSCRIBED]: 40000,   // 30s → 40s (more time for first data)
     };
 
     if (newState in timeouts) {
