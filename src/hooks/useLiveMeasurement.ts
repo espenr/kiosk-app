@@ -2,8 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useConfig } from '../contexts/ConfigContext';
 import { TibberLiveConnection, LiveMeasurement, ConnectionState } from '../services/tibber';
 
-const STALENESS_WARNING_MS = 30 * 1000;  // 30 seconds
-const STALENESS_ERROR_MS = 60 * 1000;    // 60 seconds
+const STALENESS_WARNING_MS = 10 * 1000;  // 10 seconds (adjusted for 3s throttling)
+const STALENESS_ERROR_MS = 20 * 1000;    // 20 seconds (adjusted for 3s throttling)
 
 export type DataFreshness = 'fresh' | 'warning' | 'stale';
 
@@ -34,11 +34,11 @@ export function useLiveMeasurement(
   const [lastUpdateSeconds, setLastUpdateSeconds] = useState<number | null>(null);
 
   const connectionRef = useRef<TibberLiveConnection | null>(null);
+  const bufferedMeasurementRef = useRef<LiveMeasurement | null>(null);
 
   const handleMeasurement = useCallback((data: LiveMeasurement) => {
-    setMeasurement(data);
-    setError(null);
-    setFreshness('fresh');
+    // Store in buffer instead of immediate state update
+    bufferedMeasurementRef.current = data;
   }, []);
 
   const handleError = useCallback((err: string) => {
@@ -75,6 +75,19 @@ export function useLiveMeasurement(
       connectionRef.current = null;
     };
   }, [token, homeId, realTimeEnabled, handleMeasurement, handleError, handleStateChange]);
+
+  // Throttled state updates every 3 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (bufferedMeasurementRef.current) {
+        setMeasurement(bufferedMeasurementRef.current);
+        setError(null);
+        setFreshness('fresh');
+      }
+    }, 3000); // 3 second interval
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Staleness detection and auto-reconnection
   useEffect(() => {
