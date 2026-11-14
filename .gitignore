@@ -36,3 +36,7 @@ public/photos.json
 server/data/
 .DS_Store
 src/version.json
+
+# Pi emulator runtime state (may contain secrets)
+docker/pi/data/
+docker/pi/env

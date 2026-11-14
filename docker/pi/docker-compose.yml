@@ -1,0 +1,24 @@
+# Pi emulator. Use scripts/pi-emulator.sh rather than calling this directly.
+#   PI_PLATFORM=linux/arm/v7 (default, like the Pi) or linux/amd64 (fast)
+#   PI_PORT=8080             host port for http://localhost:8080
+services:
+  kiosk:
+    build:
+      context: ../..
+      dockerfile: docker/pi/Dockerfile
+      args:
+        KIOSK_VERSION: ${KIOSK_VERSION:-v0000.00.00.docker}
+    platform: ${PI_PLATFORM:-linux/arm/v7}
+    image: kiosk-pi-emulator:${PI_TAG:-armhf}
+    hostname: kiosk
+    container_name: kiosk-pi-emulator
+    ports:
+      - "${PI_PORT:-8080}:80"
+    volumes:
+      # Like /var/www/kiosk-data on the Pi. Gitignored, may hold secrets.
+      - ./data:/var/www/kiosk-data
+      # Optional: ICLOUD_ALBUM_URL=... (gitignored)
+      - ./env:/var/www/kiosk/.env:ro
+    environment:
+      TZ: Europe/Oslo
+    restart: unless-stopped

@@ -1,0 +1,12 @@
+node_modules
+server/node_modules
+dist
+server/dist
+server/data
+docker/pi/data
+docker/pi/env
+logs
+tests/screenshots
+.git
+.env
+*.img
