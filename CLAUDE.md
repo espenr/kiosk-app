@@ -47,7 +47,7 @@ ssh pi@pi.local 'DISPLAY=:0 scrot /tmp/screen.png' && scp pi@pi.local:/tmp/scree
 - **State:** React Context API + localStorage
 - **Testing:** Puppeteer for browser automation
 - **Build:** Vite with Preact alias, path alias '@' -> 'src'
-- **Target Device:** Raspberry Pi 2 Model B (1GB RAM, quad-core ARMv7)
+- **Target Device:** Raspberry Pi 2 Model B (1GB RAM, quad-core ARMv7). **It died 2026-10-11; replacement Pi 4 (8 GB) is in progress, hostname `pi` → `kiosk`. See [`docs/PI4_MIGRATION.md`](./docs/PI4_MIGRATION.md).**
 - **Bundle Size:** ~66 KB (13 KB CSS + 53 KB JS)
 
 ## Deployment Architecture

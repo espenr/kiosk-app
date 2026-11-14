@@ -4,6 +4,9 @@
 
 The kiosk application runs on a Raspberry Pi 2 Model B configured as a dedicated display appliance. This document covers infrastructure setup, service management, deployment procedures, and operational runbooks.
 
+> **2026-11-14:** The Pi 2 below died on 2026-10-11 and is being replaced by a Raspberry Pi 4 (8 GB) with
+> hostname `kiosk`. The tables below describe the old setup. See [`../PI4_MIGRATION.md`](../PI4_MIGRATION.md).
+
 ## Hardware Specifications
 
 | Component | Specification |

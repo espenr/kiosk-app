@@ -1,0 +1,11 @@
+[Unit]
+Description=Turn TV On at Boot
+After=default.target
+
+[Service]
+Type=oneshot
+ExecStart=/var/www/kiosk/scripts/tv-control.sh on
+RemainAfterExit=yes
+
+[Install]
+WantedBy=default.target
