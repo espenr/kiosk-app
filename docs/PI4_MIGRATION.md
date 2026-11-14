@@ -4,7 +4,7 @@
 **Status:** Waiting for hardware. The repo is synced. **The SD card is backed up and verified** (2026-11-14):
 `~/kiosk-sd-2026-11-14.img` (15,634,268,160 bytes) with `.sha256` on the dev machine. Both filesystems pass a check,
 and `kiosk-data`, `.env`, the user units and the Pi 4 boot files are present. Next step: §2 (hardware) when the Pi arrives;
-§1 can be skipped.
+§1 can be skipped. Session context and open questions: [`PI4_HANDOFF.md`](PI4_HANDOFF.md).
 
 The kiosk Pi, a **Raspberry Pi 2 Model B** with a USB Wi-Fi dongle, died on **2026-10-11**. It rebooted at
 17:28 and 17:56, and its last log line was at 18:59. The replacement is a **Raspberry Pi 4 Model B, 8 GB**.
